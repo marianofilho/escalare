@@ -1,6 +1,8 @@
+// src/app/(auth)/login/page.tsx
 "use client"
 
 import { useState, type FormEvent } from "react"
+import Link from "next/link"
 import { useAuth } from "@/hooks/useAuth"
 
 export default function LoginPage() {
@@ -75,6 +77,13 @@ export default function LoginPage() {
           >
             {loading ? "Entrando…" : "Entrar"}
           </button>
+
+          <p className="text-center text-sm text-slate-500">
+            Não tem conta?{" "}
+            <Link href="/cadastro" className="text-indigo-600 hover:underline font-medium">
+              Cadastrar ministério
+            </Link>
+          </p>
         </form>
       </div>
     </main>

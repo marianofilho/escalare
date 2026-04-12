@@ -1,4 +1,4 @@
-// middleware.ts
+// proxy.ts
 import { createServerClient } from "@supabase/ssr"
 import { NextResponse, type NextRequest } from "next/server"
 
@@ -7,14 +7,13 @@ const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
 if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
   throw new Error(
-    "[middleware] NEXT_PUBLIC_SUPABASE_URL e NEXT_PUBLIC_SUPABASE_ANON_KEY são obrigatórias. " +
-    "Verifique seu arquivo .env.local."
+    "[proxy] NEXT_PUBLIC_SUPABASE_URL e NEXT_PUBLIC_SUPABASE_ANON_KEY são obrigatórias."
   )
 }
 
 const PUBLIC_ROUTES = ["/login", "/cadastro"]
 
-export async function middleware(request: NextRequest): Promise<NextResponse> {
+export async function proxy(request: NextRequest): Promise<NextResponse> {
   let response = NextResponse.next({ request })
 
   const supabase = createServerClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
@@ -34,9 +33,7 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
     },
   })
 
-  const {
-    data: { session },
-  } = await supabase.auth.getSession()
+  const { data: { session } } = await supabase.auth.getSession()
 
   const pathname = request.nextUrl.pathname
   const isPublicRoute = PUBLIC_ROUTES.some((route) => pathname.startsWith(route))
@@ -56,6 +53,6 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
 
 export const config = {
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|api/auth/login|api/auth/logout).*)",
+    "/((?!_next/static|_next/image|favicon.ico|api/auth/login|api/auth/logout|api/auth/cadastro).*)",
   ],
 }

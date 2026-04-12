@@ -45,6 +45,7 @@ model Igreja {
   id           String   @id @default(cuid())
   nome         String
   descricao    String?
+  slug         String   @unique  // ← adicionar esta linha
   cidade       String?
   estado       String?
   telefone     String?
@@ -62,6 +63,7 @@ model Igreja {
 model Membro {
   id                    String       @id @default(cuid())
   igrejaId              String
+  supabaseId            String?      @unique  // ← adicionar
   nome                  String
   email                 String
   telefone              String?

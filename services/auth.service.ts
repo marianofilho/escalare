@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
-import { UsuarioRepository } from "@/repositories/usuario.repository"
+import { MembroRepository } from "@/repositories/membro.repository"
 import {
   CredenciaisInvalidasError,
   NaoAutorizadoError,
@@ -12,7 +12,7 @@ import {
 import type { LoginDto } from "@/dtos/auth/login.dto"
 
 export class AuthService {
-  constructor(private readonly usuarioRepository: UsuarioRepository) {}
+  constructor(private readonly membroRepository: MembroRepository) {}
 
   async login(
     dto: LoginDto,
@@ -27,15 +27,14 @@ export class AuthService {
       throw new CredenciaisInvalidasError()
     }
 
-    const usuario = await this.usuarioRepository.findBySupabaseId(data.user.id)
-    if (!usuario) {
-      // Usuário existe no Supabase Auth mas não no banco da aplicação
+    const membro = await this.membroRepository.findBySupabaseId(data.user.id)
+    if (!membro) {
       await supabase.auth.signOut()
       throw new NaoAutorizadoError()
     }
 
     return {
-      usuario: toUsuarioResponseDto(usuario),
+      usuario: toUsuarioResponseDto(membro),
       accessToken: data.session.access_token,
     }
   }
@@ -45,11 +44,10 @@ export class AuthService {
   }
 
   async me(supabaseId: string): Promise<UsuarioResponseDto> {
-    const usuario = await this.usuarioRepository.findBySupabaseId(supabaseId)
-    if (!usuario) throw new UsuarioNaoEncontradoError(supabaseId)
-    return toUsuarioResponseDto(usuario)
+    const membro = await this.membroRepository.findBySupabaseId(supabaseId)
+    if (!membro) throw new UsuarioNaoEncontradoError(supabaseId)
+    return toUsuarioResponseDto(membro)
   }
 }
 
-// Instância singleton do service (injeção manual)
-export const authService = new AuthService(new UsuarioRepository())
+export const authService = new AuthService(new MembroRepository())

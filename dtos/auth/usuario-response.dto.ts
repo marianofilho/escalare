@@ -1,4 +1,4 @@
-import type { Usuario, Igreja } from "@prisma/client"
+import type { Membro, Igreja } from "@prisma/client"
 
 export interface UsuarioResponseDto {
   id: string
@@ -10,16 +10,16 @@ export interface UsuarioResponseDto {
   igrejaNome: string
 }
 
-type UsuarioComIgreja = Usuario & { igreja: Igreja }
+export type MembroComIgreja = Membro & { igreja: Igreja }
 
-export function toUsuarioResponseDto(usuario: UsuarioComIgreja): UsuarioResponseDto {
+export function toUsuarioResponseDto(membro: MembroComIgreja): UsuarioResponseDto {
   return {
-    id: usuario.id,
-    nome: usuario.nome,
-    email: usuario.email,
-    perfil: usuario.perfil,
-    status: usuario.status,
-    igrejaId: usuario.igrejaId,
-    igrejaNome: usuario.igreja.nome,
+    id: membro.id,
+    nome: membro.nome,
+    email: membro.email,
+    perfil: membro.perfil,
+    status: membro.status,
+    igrejaId: membro.igrejaId,
+    igrejaNome: membro.igreja.nome,
   }
 }
