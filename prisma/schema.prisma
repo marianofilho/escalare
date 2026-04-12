@@ -1,0 +1,190 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider          = "postgresql"
+  url               = env("DATABASE_URL")
+  directUrl         = env("DIRECT_URL")
+}
+
+enum PerfilMembro {
+  ADMINISTRADOR
+  CANTOR
+  MUSICO
+  BACKING_VOCAL
+}
+
+enum StatusMembro {
+  ATIVO
+  INATIVO
+}
+
+enum StatusCulto {
+  ABERTO
+  FECHADO
+  REALIZADO
+}
+
+enum TipoCulto {
+  CULTO_DOMINGO_MANHA
+  CULTO_DOMINGO_NOITE
+  CULTO_SEMANA
+  ENSAIO
+  SEMANA_ORACAO
+  ESPECIAL
+  OUTRO
+}
+
+enum StatusMusica {
+  ATIVA
+  ARQUIVADA
+}
+
+model Igreja {
+  id           String   @id @default(cuid())
+  nome         String
+  descricao    String?
+  cidade       String?
+  estado       String?
+  telefone     String?
+  email        String?
+  logo         String?
+  site         String?
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  membros      Membro[]
+  cultos       Culto[]
+  musicas      Musica[]
+}
+
+model Membro {
+  id                    String       @id @default(cuid())
+  igrejaId              String
+  nome                  String
+  email                 String
+  telefone              String?
+  fotoPerfil            String?
+  perfil                PerfilMembro
+  instrumentoPrincipal  String?
+  instrumentoSecundario String?
+  fazBackingVocal       Boolean      @default(false)
+  status                StatusMembro @default(ATIVO)
+  dataIngresso          DateTime?
+  criadoEm              DateTime     @default(now())
+  atualizadoEm          DateTime     @updatedAt
+
+  igreja              Igreja           @relation(fields: [igrejaId], references: [id])
+  inscricoes          InscricaoCulto[]
+  repertoriosCriados  Repertorio[]
+  tomsCantor          MusicaCantor[]
+
+  @@unique([email, igrejaId])
+}
+
+model Culto {
+  id                     String      @id @default(cuid())
+  igrejaId               String
+  tipo                   TipoCulto
+  subtipo                String?
+  dataHoraInicio         DateTime
+  dataHoraFim            DateTime?
+  cantorId               String?
+  status                 StatusCulto @default(ABERTO)
+  inscricoesAbertas      Boolean     @default(true)
+  prazoCancelamentoHoras Int         @default(48)
+  repetirSemanal         Boolean     @default(false)
+  observacoesInternas    String?
+  criadoEm               DateTime    @default(now())
+  atualizadoEm           DateTime    @updatedAt
+
+  igreja     Igreja              @relation(fields: [igrejaId], references: [id])
+  limites    LimiteInstrumento[]
+  inscricoes InscricaoCulto[]
+  repertorio Repertorio?
+}
+
+model LimiteInstrumento {
+  id          String @id @default(cuid())
+  cultoId     String
+  instrumento String
+  limite      Int    @default(1)
+
+  culto       Culto  @relation(fields: [cultoId], references: [id], onDelete: Cascade)
+
+  @@unique([cultoId, instrumento])
+}
+
+model InscricaoCulto {
+  id          String   @id @default(cuid())
+  membroId    String
+  cultoId     String
+  instrumento String
+  fazBacking  Boolean  @default(false)
+  ausente     Boolean  @default(false)
+  criadoEm    DateTime @default(now())
+
+  membro      Membro   @relation(fields: [membroId], references: [id])
+  culto       Culto    @relation(fields: [cultoId], references: [id], onDelete: Cascade)
+
+  @@unique([membroId, cultoId])
+}
+
+model Musica {
+  id            String       @id @default(cuid())
+  igrejaId      String
+  titulo        String
+  artista       String?
+  bpm           Int?
+  linkVideo     String?
+  linkCifra     String?
+  linkPartitura String?
+  status        StatusMusica @default(ATIVA)
+  criadoEm      DateTime     @default(now())
+  atualizadoEm  DateTime     @updatedAt
+
+  igreja         Igreja           @relation(fields: [igrejaId], references: [id])
+  cantores       MusicaCantor[]
+  itemRepertorio ItemRepertorio[]
+}
+
+model MusicaCantor {
+  id           String  @id @default(cuid())
+  musicaId     String
+  cantorId     String
+  tom          String
+  linkSolo     String?
+  linkPlayback String?
+
+  musica       Musica  @relation(fields: [musicaId], references: [id], onDelete: Cascade)
+  cantor       Membro  @relation(fields: [cantorId], references: [id])
+
+  @@unique([musicaId, cantorId])
+}
+
+model Repertorio {
+  id           String   @id @default(cuid())
+  cultoId      String   @unique
+  cantorId     String
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  culto        Culto          @relation(fields: [cultoId], references: [id], onDelete: Cascade)
+  cantor       Membro         @relation(fields: [cantorId], references: [id])
+  itens        ItemRepertorio[]
+}
+
+model ItemRepertorio {
+  id           String @id @default(cuid())
+  repertorioId String
+  musicaId     String
+  ordem        Int
+  tomUsado     String?
+  observacoes  String?
+
+  repertorio   Repertorio @relation(fields: [repertorioId], references: [id], onDelete: Cascade)
+  musica       Musica     @relation(fields: [musicaId], references: [id])
+
+  @@unique([repertorioId, ordem])
+}
