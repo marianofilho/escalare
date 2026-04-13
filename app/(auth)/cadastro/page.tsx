@@ -82,7 +82,7 @@ export default function CadastroPage() {
         return
       }
 
-      router.push("/dashboard")
+      router.push("/")
       router.refresh()
     } catch {
       setError("Erro de conexão. Tente novamente.")

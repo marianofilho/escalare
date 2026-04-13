@@ -1,3 +1,4 @@
+// src/services/cadastro.service.ts
 import type { SupabaseClient } from "@supabase/supabase-js"
 import { IgrejaRepository } from "@/repositories/igreja.repository"
 import { MembroRepository } from "@/repositories/membro.repository"
@@ -33,10 +34,15 @@ export class CadastroService {
     const slugExistente = await this.igrejaRepository.findBySlug(dto.igrejaSlug)
     if (slugExistente) throw new SlugJaExisteError(dto.igrejaSlug)
 
-    // 2. Cria usuário no Supabase Auth
+    // 2. Cria usuário no Supabase Auth com nome provisório
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email: dto.email,
       password: dto.senha,
+      options: {
+        data: {
+          nome: dto.nome,
+        },
+      },
     })
 
     if (authError || !authData.user) {
@@ -67,6 +73,15 @@ export class CadastroService {
       })
 
       return { igreja, membro }
+    })
+
+    // 4. Atualiza user_metadata com igrejaId e membroId
+    await supabase.auth.updateUser({
+      data: {
+        nome: membro.nome,
+        igrejaId: igreja.id,
+        membroId: membro.id,
+      },
     })
 
     return {

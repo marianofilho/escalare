@@ -1,3 +1,4 @@
+// src/lib/supabase-server.ts
 import { createServerClient } from "@supabase/ssr"
 import { cookies } from "next/headers"
 
@@ -17,9 +18,7 @@ export async function createSupabaseServerClient() {
             cookiesToSet.forEach(({ name, value, options }) =>
               cookieStore.set(name, value, options)
             )
-          } catch {
-            // setAll chamado de Server Component — ignorado (middleware cuida disso)
-          }
+          } catch {}
         },
       },
     }
@@ -28,6 +27,6 @@ export async function createSupabaseServerClient() {
 
 export async function getServerSession() {
   const supabase = await createSupabaseServerClient()
-  const { data: { session } } = await supabase.auth.getSession()
-  return session
+  const { data: { user } } = await supabase.auth.getUser()
+  return user ?? null
 }

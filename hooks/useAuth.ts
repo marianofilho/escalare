@@ -1,46 +1,41 @@
+// src/hooks/useAuth.ts
 "use client"
 
 import { useState } from "react"
 import { createSupabaseClient } from "@/lib/supabase"
 import { useRouter } from "next/navigation"
-import type { UsuarioResponseDto } from "@/dtos/auth/usuario-response.dto"
 
 interface LoginPayload {
   email: string
   senha: string
 }
 
-interface AuthState {
-  loading: boolean
-  error: string | null
-}
-
 export function useAuth() {
-  const [state, setState] = useState<AuthState>({ loading: false, error: null })
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const router = useRouter()
 
   async function login({ email, senha }: LoginPayload): Promise<void> {
-    setState({ loading: true, error: null })
+    setLoading(true)
+    setError(null)
     try {
-      const response = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, senha }),
+      const supabase = createSupabaseClient()
+      const { error: authError } = await supabase.auth.signInWithPassword({
+        email,
+        password: senha,
       })
 
-      const data: unknown = await response.json()
-
-      if (!response.ok) {
-        const errorData = data as { error: string }
-        setState({ loading: false, error: errorData.error })
+      if (authError) {
+        setError("E-mail ou senha inválidos")
         return
       }
 
-      setState({ loading: false, error: null })
-      router.push("/dashboard")
+      router.push("/")
       router.refresh()
     } catch {
-      setState({ loading: false, error: "Erro de conexão. Tente novamente." })
+      setError("Erro de conexão. Tente novamente.")
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -51,5 +46,5 @@ export function useAuth() {
     router.refresh()
   }
 
-  return { login, logout, ...state }
+  return { login, logout, loading, error }
 }
