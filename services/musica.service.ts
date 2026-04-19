@@ -65,6 +65,13 @@ export class MusicaService {
     return this.musicaRepository.arquivar(id)
   }
 
+  async restaurar(id: string, igrejaId: string, membroId: string) {
+    await this.exigirAdmin(membroId, igrejaId)
+    const musica = await this.musicaRepository.findById(id, igrejaId)
+    if (!musica) throw new NaoEncontradoError("Música", id)
+    return this.musicaRepository.restaurar(id)
+  }
+
   // --- MusicaCantor ---
 
   async vincularCantor(musicaId: string, igrejaId: string, membroId: string, dto: VincularCantorDto) {

@@ -22,7 +22,6 @@ export default function MusicaLista({ isAdmin }: MusicaListaProps) {
   const [filtroStatus, setFiltroStatus] = useState("ATIVA")
   const [buscaDebounced, setBuscaDebounced] = useState("")
 
-  // Debounce na busca para não disparar request a cada tecla
   useEffect(() => {
     const t = setTimeout(() => setBuscaDebounced(busca), 350)
     return () => clearTimeout(t)
@@ -50,6 +49,17 @@ export default function MusicaLista({ isAdmin }: MusicaListaProps) {
   async function handleArquivar(id: string) {
     if (!confirm("Arquivar esta música? Ela não aparecerá em novos repertórios.")) return
     await fetch(`/api/musicas/${id}`, { method: "DELETE" })
+    carregar()
+  }
+
+  async function handleRestaurar(id: string) {
+    if (!confirm("Restaurar esta música? Ela voltará a aparecer no catálogo.")) return
+    const res = await fetch(`/api/musicas/${id}/restaurar`, { method: "PATCH" })
+    if (!res.ok) {
+      const data = await res.json()
+      alert(data.error ?? "Erro ao restaurar música")
+      return
+    }
     carregar()
   }
 
@@ -81,7 +91,6 @@ export default function MusicaLista({ isAdmin }: MusicaListaProps) {
         </div>
       </div>
 
-      {/* Estados */}
       {loading && (
         <div className="text-center py-12 text-zinc-400 text-sm">Carregando músicas...</div>
       )}
@@ -92,21 +101,32 @@ export default function MusicaLista({ isAdmin }: MusicaListaProps) {
       )}
       {!loading && !error && musicas.length === 0 && (
         <div className="text-center py-12">
-          <p className="text-zinc-400 text-sm">Nenhuma música encontrada.</p>
-          <Link
-            href="/musicas/nova"
-            className="mt-2 inline-block text-sm text-violet-600 hover:underline"
-          >
-            Cadastrar primeira música
-          </Link>
+          <p className="text-zinc-400 text-sm">
+            {filtroStatus === "ARQUIVADA"
+              ? "Nenhuma música arquivada."
+              : "Nenhuma música encontrada."}
+          </p>
+          {filtroStatus !== "ARQUIVADA" && (
+            <Link
+              href="/musicas/nova"
+              className="mt-2 inline-block text-sm text-violet-600 hover:underline"
+            >
+              Cadastrar primeira música
+            </Link>
+          )}
         </div>
       )}
 
-      {/* Grade de cards */}
       {!loading && musicas.length > 0 && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {musicas.map((m) => (
-            <MusicaCard key={m.id} musica={m} isAdmin={isAdmin} onArquivar={handleArquivar} />
+            <MusicaCard
+              key={m.id}
+              musica={m}
+              isAdmin={isAdmin}
+              onArquivar={handleArquivar}
+              onRestaurar={handleRestaurar}
+            />
           ))}
         </div>
       )}
@@ -122,15 +142,21 @@ function MusicaCard({
   musica,
   isAdmin,
   onArquivar,
+  onRestaurar,
 }: {
   musica: MusicaResponseDto
   isAdmin: boolean
   onArquivar: (id: string) => void
+  onRestaurar: (id: string) => void
 }) {
   const corStatus = STATUS_COR[musica.status] ?? "bg-zinc-100 text-zinc-500"
 
   return (
-    <div className="bg-white border border-zinc-200 rounded-xl p-4 flex flex-col gap-3 hover:border-violet-300 hover:shadow-sm transition-all">
+    <div className={`bg-white border rounded-xl p-4 flex flex-col gap-3 transition-all ${
+      musica.status === "ARQUIVADA"
+        ? "border-zinc-200 opacity-75 hover:opacity-100"
+        : "border-zinc-200 hover:border-violet-300 hover:shadow-sm"
+    }`}>
       {/* Cabeçalho */}
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
@@ -203,19 +229,28 @@ function MusicaCard({
 
       {/* Ações — visíveis apenas para administrador */}
       {isAdmin && (
-        <div className="flex items-center justify-end gap-2 pt-1 border-t border-zinc-100">
-          <Link
-            href={`/musicas/${musica.id}/editar`}
-            className="text-xs text-violet-600 hover:text-violet-800 transition-colors"
-          >
-            Editar
-          </Link>
-          {musica.status === "ATIVA" && (
+        <div className="flex items-center justify-end gap-3 pt-1 border-t border-zinc-100">
+          {musica.status === "ATIVA" ? (
+            <>
+              <Link
+                href={`/musicas/${musica.id}/editar`}
+                className="text-xs text-violet-600 hover:text-violet-800 transition-colors"
+              >
+                Editar
+              </Link>
+              <button
+                onClick={() => onArquivar(musica.id)}
+                className="text-xs text-zinc-400 hover:text-red-600 transition-colors"
+              >
+                Arquivar
+              </button>
+            </>
+          ) : (
             <button
-              onClick={() => onArquivar(musica.id)}
-              className="text-xs text-zinc-400 hover:text-red-600 transition-colors"
+              onClick={() => onRestaurar(musica.id)}
+              className="text-xs text-emerald-600 hover:text-emerald-800 font-medium transition-colors"
             >
-              Arquivar
+              ↩ Restaurar
             </button>
           )}
         </div>

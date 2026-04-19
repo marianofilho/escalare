@@ -135,18 +135,21 @@ function CultoCard({
   }
 
   return (
-    <div className="bg-white border border-zinc-200 rounded-xl overflow-hidden">
+    <div className="bg-white border border-zinc-200 rounded-xl overflow-hidden hover:border-violet-200 transition-colors">
       <div className="p-4 flex items-start justify-between gap-4">
-        <div className="flex items-start gap-3">
+        <div className="flex items-start gap-3 min-w-0">
           <div className="w-10 h-10 rounded-lg bg-violet-100 flex items-center justify-center text-lg shrink-0">🎤</div>
-          <div>
-            <div className="flex items-center gap-2 flex-wrap">
-              <p className="text-sm font-semibold text-zinc-800">{formatarTipoCulto(culto.tipo)}</p>
+          <div className="min-w-0">
+            {/* Título clicável leva ao detalhe */}
+            <Link href={`/cultos/${culto.id}`} className="group flex items-center gap-2 flex-wrap">
+              <p className="text-sm font-semibold text-zinc-800 group-hover:text-violet-700 transition-colors">
+                {formatarTipoCulto(culto.tipo)}
+              </p>
               {culto.subtipo && <span className="text-xs text-zinc-400">— {culto.subtipo}</span>}
               <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${statusInfo.className}`}>
                 {statusInfo.label}
               </span>
-            </div>
+            </Link>
             <p className="text-xs text-zinc-400 mt-0.5">{formatarDataHora(culto.dataHoraInicio)}</p>
             <p className="text-xs text-zinc-500 mt-1">
               {culto.totalInscritos} inscrito{culto.totalInscritos !== 1 ? "s" : ""}
@@ -182,6 +185,14 @@ function CultoCard({
               </button>
             )
           )}
+          {/* Ver detalhe — sempre visível */}
+          <Link
+            href={`/cultos/${culto.id}`}
+            className="text-xs text-zinc-400 hover:text-violet-600 transition-colors"
+            title="Ver detalhes"
+          >
+            Ver →
+          </Link>
           {isAdmin && (
             <Link
               href={`/cultos/${culto.id}/editar`}
@@ -201,7 +212,7 @@ function CultoCard({
             <select
               value={instrumento}
               onChange={(e) => setInstrumento(e.target.value)}
-              className="rounded-lg border border-zinc-200 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
+              className="rounded-lg border border-zinc-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
             >
               <option value="">Selecionar instrumento...</option>
               {["Violão", "Guitarra", "Baixo", "Bateria", "Teclado", "Piano", "Voz", "Outro"].map((i) => (
@@ -234,7 +245,7 @@ function CultoCard({
         </div>
       )}
 
-      {/* Inscritos */}
+      {/* Inscritos resumidos */}
       {culto.inscricoes.length > 0 && (
         <div className="border-t border-zinc-100 px-4 py-2 flex flex-wrap gap-2">
           {culto.inscricoes.map((i) => (
@@ -254,6 +265,15 @@ function CultoCard({
               {i.fazBacking && <span className="text-xs text-emerald-500">BV</span>}
             </div>
           ))}
+          {/* Link para ver ausências (admin, cultos realizados) */}
+          {isAdmin && culto.status === "REALIZADO" && (
+            <Link
+              href={`/cultos/${culto.id}`}
+              className="text-xs text-amber-600 hover:underline ml-auto self-center"
+            >
+              Marcar ausências →
+            </Link>
+          )}
         </div>
       )}
     </div>

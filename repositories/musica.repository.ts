@@ -94,6 +94,14 @@ export class MusicaRepository {
     })
   }
 
+  async restaurar(id: string) {
+    return prisma.musica.update({
+      where: { id },
+      data: { status: "ATIVA" },
+      include: cantoresInclude,
+    })
+  }
+
   // --- MusicaCantor ---
 
   async findVinculo(musicaId: string, cantorId: string) {

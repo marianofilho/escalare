@@ -1,43 +1,23 @@
 // src/app/(dashboard)/page.tsx
-import { getServerSession } from "@/lib/supabase-server"
 import { redirect } from "next/navigation"
-import { prisma } from "@/lib/prisma"
+import { createSupabaseServerClient } from "@/lib/supabase-server"
+import { makeDashboardService } from "@/lib/factories"
 import DashboardClient from "@/components/dashboard/DashboardClient"
 
+export const dynamic = "force-dynamic"
+
 export default async function DashboardPage() {
-  const user = await getServerSession()
-  if (!user) redirect("/login")
+  const supabase = await createSupabaseServerClient()
+  const {
+    data: { session },
+  } = await supabase.auth.getSession()
 
-  const igrejaId = user.user_metadata?.igrejaId as string | undefined
-  if (!igrejaId) redirect("/login")
+  if (!session) redirect("/login")
 
-  const [totalMembros, totalMusicas, proximosCultos, igreja] = await Promise.all([
-    prisma.membro.count({ where: { igrejaId, status: "ATIVO" } }),
-    prisma.musica.count({ where: { igrejaId, status: "ATIVA" } }),
-    prisma.culto.findMany({
-      where: {
-        igrejaId,
-        status: { in: ["ABERTO", "FECHADO"] },
-        dataHoraInicio: { gte: new Date() },
-      },
-      orderBy: { dataHoraInicio: "asc" },
-      take: 3,
-      include: {
-        inscricoes: { include: { membro: { select: { nome: true } } } },
-      },
-    }),
-    prisma.igreja.findUnique({ where: { id: igrejaId } }),
-  ])
+  const igrejaId = session.user.user_metadata?.igrejaId as string
+  const nomeMembro = (session.user.user_metadata?.nome as string | undefined) ?? "Membro"
 
-  const nomeMembro = user.user_metadata?.nome as string | undefined
+  const dados = await makeDashboardService().buscarResumo(igrejaId)
 
-  return (
-    <DashboardClient
-      nomeMembro={nomeMembro ?? ""}
-      nomeIgreja={igreja?.nome ?? ""}
-      totalMembros={totalMembros}
-      totalMusicas={totalMusicas}
-      proximosCultos={proximosCultos}
-    />
-  )
+  return <DashboardClient dados={dados} nomeMembro={nomeMembro} />
 }

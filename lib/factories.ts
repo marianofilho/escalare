@@ -1,6 +1,8 @@
 // src/lib/factories.ts
 import { CultoRepository } from "@/repositories/culto.repository"
 import { CultoService } from "@/services/culto.service"
+import { DashboardRepository } from "@/repositories/dashboard.repository"
+import { DashboardService } from "@/services/dashboard.service"
 import { MembroRepository } from "@/repositories/membro.repository"
 import { MembroService } from "@/services/membro.service"
 import { MusicaRepository } from "@/repositories/musica.repository"
@@ -10,6 +12,10 @@ import { RepertorioService } from "@/services/repertorio.service"
 
 export function makeCultoService(): CultoService {
   return new CultoService(new CultoRepository())
+}
+
+export function makeDashboardService(): DashboardService {
+  return new DashboardService(new DashboardRepository())
 }
 
 export function makeMembroService(): MembroService {
