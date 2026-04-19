@@ -12,10 +12,11 @@ export default async function DashboardLayout({
   if (!user) redirect("/login")
 
   const nomeMembro = user.user_metadata?.nome as string | undefined
+  const fotoPerfil = user.user_metadata?.fotoPerfil as string | undefined
 
   return (
     <div className="min-h-screen bg-zinc-50">
-      <NavBar nomeMembro={nomeMembro ?? ""} />
+      <NavBar nomeMembro={nomeMembro ?? ""} fotoPerfil={fotoPerfil} />
       <div>{children}</div>
     </div>
   )

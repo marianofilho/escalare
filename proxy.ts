@@ -63,6 +63,8 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
 
 export const config = {
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|api/auth/login|api/auth/logout|api/auth/cadastro|auth/callback|auth/erro).*)",
+    // Exclui arquivos estáticos, imagens, favicon e TODAS as rotas /api/
+    // As API routes já verificam a sessão internamente
+    "/((?!_next/static|_next/image|favicon.ico|api/).*)",
   ],
 }
