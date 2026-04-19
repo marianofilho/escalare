@@ -26,23 +26,14 @@ export class CadastroService {
     private readonly membroRepository: MembroRepository
   ) {}
 
-  async cadastrar(
-    dto: CadastroDto,
-    supabase: SupabaseClient
-  ): Promise<CadastroResponseDto> {
-    // 1. Verifica se o slug já existe
+  async cadastrar(dto: CadastroDto, supabase: SupabaseClient): Promise<CadastroResponseDto> {
     const slugExistente = await this.igrejaRepository.findBySlug(dto.igrejaSlug)
     if (slugExistente) throw new SlugJaExisteError(dto.igrejaSlug)
 
-    // 2. Cria usuário no Supabase Auth com nome provisório
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email: dto.email,
       password: dto.senha,
-      options: {
-        data: {
-          nome: dto.nome,
-        },
-      },
+      options: { data: { nome: dto.nome } },
     })
 
     if (authError || !authData.user) {
@@ -53,15 +44,10 @@ export class CadastroService {
 
     const supabaseId = authData.user.id
 
-    // 3. Cria Igreja + Membro Admin em transação atômica
     const { igreja, membro } = await prisma.$transaction(async (tx) => {
       const igreja = await tx.igreja.create({
-        data: {
-          nome: dto.igrejaNome,
-          slug: dto.igrejaSlug,
-        },
+        data: { nome: dto.igrejaNome, slug: dto.igrejaSlug },
       })
-
       const membro = await tx.membro.create({
         data: {
           supabaseId,
@@ -71,16 +57,16 @@ export class CadastroService {
           igrejaId: igreja.id,
         },
       })
-
       return { igreja, membro }
     })
 
-    // 4. Atualiza user_metadata com igrejaId e membroId
+    // Grava igrejaId, membroId e perfil no user_metadata
     await supabase.auth.updateUser({
       data: {
         nome: membro.nome,
         igrejaId: igreja.id,
         membroId: membro.id,
+        perfil: membro.perfil,
       },
     })
 

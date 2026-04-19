@@ -33,7 +33,7 @@ export default async function CultosPage() {
             </Link>
           )}
         </div>
-        <CultoLista isAdmin={isAdmin} />
+        <CultoLista isAdmin={isAdmin} membroId={membroId} />
       </div>
     </div>
   )

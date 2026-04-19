@@ -346,3 +346,22 @@ export async function GET(request: Request) {
 - Nunca atualize para Prisma 7 sem revisar o guia de migração com o time
 - Nunca use `any` no TypeScript
 - Nunca commite o arquivo `.env` — use `.env.example` como referência
+
+## 13. Backlog de Melhorias
+
+### Alta prioridade
+- [ ] **Dashboard com dados reais** — validar se `DashboardClient` está consumindo dados reais do banco (`totalMembros`, `totalMusicas`, `proximosCultos`) ou valores hardcoded
+- [ ] **Tela de culto individual** (`/cultos/[id]`) — view detalhada com inscritos, link para repertório e status do culto; o `CultoLista` já linka para `/cultos/[id]/editar` mas a view de leitura não existe
+- [ ] **Testes** Criar testes para cada funcionalidade, fazer uma boa cobertura de testes no sistema;
+
+### Média prioridade
+- [ ] **Marcação de ausência** — o schema tem `ausente` em `InscricaoCulto` e o `CultoService` tem `marcarAusente`, mas não há UI; admin marca quem faltou após o culto
+- [ ] **Restaurar música arquivada** — adicionar ação "Restaurar" na listagem de músicas arquivadas (status `ARQUIVADA` → `ATIVA`)
+- [ ] **Perfil do membro** (`/perfil`) — página onde o próprio membro atualiza nome, telefone, instrumento principal e foto de perfil
+- [ ] **Notificação de escala por email** — ao criar ou editar um culto, notificar membros por email que as inscrições estão abertas (Supabase já tem suporte a envio de emails)
+
+### Baixa prioridade
+- [ ] **`.env.example`** — criar arquivo com todas as variáveis necessárias documentadas (previsto no CLAUDE.md mas não gerado)
+- [ ] **Validar middleware de rotas** (`proxy.ts`) — garantir que todas as rotas do `(dashboard)` redirecionam para `/login` sem sessão ativa, sem depender da verificação individual em cada page
+- [ ] **Filtro de músicas por cantor** — na tela de músicas, cantor vê apenas as músicas onde está vinculado, sem navegar por todo o catálogo
+- [ ] **Histórico de repertórios** — na tela `/repertorio`, além dos próximos cultos, exibir os cultos já realizados com seus repertórios para consulta

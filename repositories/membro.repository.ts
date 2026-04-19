@@ -1,6 +1,7 @@
 // src/repositories/membro.repository.ts
 import { prisma } from "@/lib/prisma"
 import type { CriarMembroDto, AtualizarMembroDto } from "@/dtos/membro/criar-membro.dto"
+import type { MembroComIgreja } from "@/dtos/auth/usuario-response.dto"
 
 export class MembroRepository {
   async findById(id: string, igrejaId: string) {
@@ -12,6 +13,13 @@ export class MembroRepository {
   async findByEmail(email: string, igrejaId: string) {
     return prisma.membro.findUnique({
       where: { email_igrejaId: { email, igrejaId } },
+    })
+  }
+
+  async findBySupabaseId(supabaseId: string): Promise<MembroComIgreja | null> {
+    return prisma.membro.findUnique({
+      where: { supabaseId },
+      include: { igreja: true },
     })
   }
 

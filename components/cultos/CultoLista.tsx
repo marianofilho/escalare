@@ -14,9 +14,10 @@ const STATUS_LABEL: Record<string, { label: string; className: string }> = {
 
 interface CultoListaProps {
   isAdmin: boolean
+  membroId: string
 }
 
-export default function CultoLista({ isAdmin }: CultoListaProps) {
+export default function CultoLista({ isAdmin, membroId }: CultoListaProps) {
   const [cultos, setCultos] = useState<CultoResponseDto[]>([])
   const [loading, setLoading] = useState(true)
   const [filtroStatus, setFiltroStatus] = useState("")
@@ -75,7 +76,13 @@ export default function CultoLista({ isAdmin }: CultoListaProps) {
       {!loading && cultos.length > 0 && (
         <div className="grid grid-cols-1 gap-3">
           {cultos.map((c) => (
-            <CultoCard key={c.id} culto={c} isAdmin={isAdmin} onAtualizar={buscar} />
+            <CultoCard
+              key={c.id}
+              culto={c}
+              isAdmin={isAdmin}
+              membroId={membroId}
+              onAtualizar={buscar}
+            />
           ))}
         </div>
       )}
@@ -86,10 +93,12 @@ export default function CultoLista({ isAdmin }: CultoListaProps) {
 function CultoCard({
   culto,
   isAdmin,
+  membroId,
   onAtualizar,
 }: {
   culto: CultoResponseDto
   isAdmin: boolean
+  membroId: string
   onAtualizar: () => void
 }) {
   const [inscrevendo, setInscrevendo] = useState(false)
@@ -99,6 +108,9 @@ function CultoCard({
   const [mostrarInscricao, setMostrarInscricao] = useState(false)
 
   const statusInfo = STATUS_LABEL[culto.status] ?? { label: culto.status, className: "bg-zinc-100 text-zinc-500" }
+
+  const jaInscrito = culto.inscricoes.some((i) => i.membroId === membroId)
+  const minhaInscricao = culto.inscricoes.find((i) => i.membroId === membroId)
 
   async function handleInscrever() {
     if (!instrumento) { setErro("Selecione um instrumento"); return }
@@ -146,14 +158,29 @@ function CultoCard({
             </p>
           </div>
         </div>
+
         <div className="flex items-center gap-2 shrink-0">
           {culto.status === "ABERTO" && culto.inscricoesAbertas && (
-            <button
-              onClick={() => setMostrarInscricao(!mostrarInscricao)}
-              className="text-xs px-3 py-1.5 bg-violet-600 text-white rounded-lg hover:bg-violet-700 transition-colors"
-            >
-              Inscrever-se
-            </button>
+            jaInscrito ? (
+              <div className="flex items-center gap-2">
+                <span className="text-xs bg-emerald-50 border border-emerald-200 text-emerald-700 px-2.5 py-1 rounded-full">
+                  ✓ {minhaInscricao?.instrumento}
+                </span>
+                <button
+                  onClick={handleCancelar}
+                  className="text-xs text-zinc-400 hover:text-red-600 transition-colors"
+                >
+                  Cancelar
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => setMostrarInscricao(!mostrarInscricao)}
+                className="text-xs px-3 py-1.5 bg-violet-600 text-white rounded-lg hover:bg-violet-700 transition-colors"
+              >
+                Inscrever-se
+              </button>
+            )
           )}
           {isAdmin && (
             <Link
@@ -167,7 +194,7 @@ function CultoCard({
       </div>
 
       {/* Painel de inscrição inline */}
-      {mostrarInscricao && (
+      {mostrarInscricao && !jaInscrito && (
         <div className="border-t border-zinc-100 bg-zinc-50 px-4 py-3 space-y-3">
           {erro && <p className="text-xs text-red-600">{erro}</p>}
           <div className="flex items-center gap-3 flex-wrap">
@@ -213,7 +240,11 @@ function CultoCard({
           {culto.inscricoes.map((i) => (
             <div
               key={i.id}
-              className="flex items-center gap-1.5 bg-zinc-50 border border-zinc-100 rounded-full px-2.5 py-1"
+              className={`flex items-center gap-1.5 border rounded-full px-2.5 py-1 ${
+                i.membroId === membroId
+                  ? "bg-violet-50 border-violet-200"
+                  : "bg-zinc-50 border-zinc-100"
+              }`}
             >
               <div className="w-5 h-5 rounded-full bg-violet-100 flex items-center justify-center text-xs font-semibold text-violet-700">
                 {i.membroNome[0].toUpperCase()}

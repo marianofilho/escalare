@@ -1,3 +1,4 @@
+// src/services/auth.service.ts
 import type { SupabaseClient } from "@supabase/supabase-js"
 import { MembroRepository } from "@/repositories/membro.repository"
 import {
@@ -23,15 +24,24 @@ export class AuthService {
       password: dto.senha,
     })
 
-    if (error || !data.session) {
-      throw new CredenciaisInvalidasError()
-    }
+    if (error || !data.session) throw new CredenciaisInvalidasError()
 
     const membro = await this.membroRepository.findBySupabaseId(data.user.id)
     if (!membro) {
       await supabase.auth.signOut()
       throw new NaoAutorizadoError()
     }
+
+    // Sincroniza user_metadata com os dados atuais do banco
+    // Garante que igrejaId, membroId e perfil estão sempre atualizados
+    await supabase.auth.updateUser({
+      data: {
+        nome: membro.nome,
+        igrejaId: membro.igrejaId,
+        membroId: membro.id,
+        perfil: membro.perfil,
+      },
+    })
 
     return {
       usuario: toUsuarioResponseDto(membro),

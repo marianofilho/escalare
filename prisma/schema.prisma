@@ -152,17 +152,25 @@ model Musica {
 }
 
 model MusicaCantor {
-  id           String  @id @default(cuid())
-  musicaId     String
-  cantorId     String
-  tom          String
-  linkSolo     String?
-  linkPlayback String?
+  id       String @id @default(cuid())
+  musicaId String
+  cantorId String
+  tom      String
 
-  musica       Musica  @relation(fields: [musicaId], references: [id], onDelete: Cascade)
-  cantor       Membro  @relation(fields: [cantorId], references: [id])
+  musica Musica        @relation(fields: [musicaId], references: [id], onDelete: Cascade)
+  cantor Membro        @relation(fields: [cantorId], references: [id])
+  faixas MusicaFaixa[]
 
   @@unique([musicaId, cantorId])
+}
+
+model MusicaFaixa {
+  id             String @id @default(cuid())
+  musicaCantorId String
+  instrumento    String // "Guitarra Ritmo", "Bateria", "Teclado 1", "Playback"...
+  linkAudio      String // Google Drive
+
+  musicaCantor MusicaCantor @relation(fields: [musicaCantorId], references: [id], onDelete: Cascade)
 }
 
 model Repertorio {
@@ -172,21 +180,21 @@ model Repertorio {
   criadoEm     DateTime @default(now())
   atualizadoEm DateTime @updatedAt
 
-  culto        Culto          @relation(fields: [cultoId], references: [id], onDelete: Cascade)
-  cantor       Membro         @relation(fields: [cantorId], references: [id])
-  itens        ItemRepertorio[]
+  culto  Culto            @relation(fields: [cultoId], references: [id], onDelete: Cascade)
+  cantor Membro           @relation(fields: [cantorId], references: [id])
+  itens  ItemRepertorio[]
 }
 
 model ItemRepertorio {
-  id           String @id @default(cuid())
+  id           String  @id @default(cuid())
   repertorioId String
   musicaId     String
-  ordem        Int
-  tomUsado     String?
+  ordem        Int?    // opcional — quem cadastra pode informar
+  tomUsado     String  // preenchido automaticamente do MusicaCantor
   observacoes  String?
 
-  repertorio   Repertorio @relation(fields: [repertorioId], references: [id], onDelete: Cascade)
-  musica       Musica     @relation(fields: [musicaId], references: [id])
+  repertorio Repertorio @relation(fields: [repertorioId], references: [id], onDelete: Cascade)
+  musica     Musica     @relation(fields: [musicaId], references: [id])
 
-  @@unique([repertorioId, ordem])
+  @@unique([repertorioId, musicaId])
 }
