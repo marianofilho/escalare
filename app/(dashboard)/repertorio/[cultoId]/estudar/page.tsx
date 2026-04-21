@@ -5,8 +5,11 @@ import { makeRepertorioService, makeCultoService } from "@/lib/factories"
 import { RepertorioResponseDto } from "@/dtos/repertorio/repertorio-response.dto"
 import { NaoEncontradoError } from "@/types/errors"
 import EstudoPlayer from "@/components/repertorio/EstudoPlayer"
+import BotaoExportarPDF from "@/components/repertorio/BotaoExportarPDF"
 import Link from "next/link"
 import { formatarTipoCulto, formatarDataHora } from "@/utils/culto"
+
+export const dynamic = "force-dynamic"
 
 interface Props {
   params: Promise<{ cultoId: string }>
@@ -30,17 +33,21 @@ export default async function EstudarPage({ params }: Props) {
 
     const repertorio = RepertorioResponseDto.from(repertorioRaw)
 
-    // Instrumento do membro neste culto (para filtrar faixas)
-    const inscricao = culto.inscricoes.find((i: { membroId: string; instrumento: string }) => i.membroId === membroId)
+    const inscricao = culto.inscricoes.find(
+      (i: { membroId: string; instrumento: string }) => i.membroId === membroId
+    )
     const instrumentoDoMembro = inscricao?.instrumento ?? null
 
     return (
       <div className="max-w-3xl mx-auto px-6 py-10">
         <div className="mb-8">
-          <Link href="/repertorio" className="text-sm text-zinc-400 hover:text-zinc-600 transition-colors">
-            ← Voltar
-          </Link>
-          <h1 className="text-2xl font-bold text-zinc-900 mt-2">
+          <div className="flex items-center justify-between gap-4 flex-wrap">
+            <Link href="/repertorio" className="text-sm text-zinc-400 hover:text-zinc-600 transition-colors">
+              ← Voltar
+            </Link>
+            <BotaoExportarPDF cultoId={cultoId} />
+          </div>
+          <h1 className="text-2xl font-bold text-zinc-900 mt-4">
             {formatarTipoCulto(culto.tipo)}
           </h1>
           <p className="text-sm text-zinc-400 mt-0.5">{formatarDataHora(culto.dataHoraInicio)}</p>

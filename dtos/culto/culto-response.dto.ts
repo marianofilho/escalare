@@ -3,7 +3,9 @@ import type { Culto, LimiteInstrumento, InscricaoCulto, Membro } from "@prisma/c
 
 type CultoComRelacoes = Culto & {
   limites: LimiteInstrumento[]
-  inscricoes: (InscricaoCulto & { membro: Pick<Membro, "id" | "nome" | "fotoPerfil"> })[]
+  inscricoes: (InscricaoCulto & {
+    membro: Pick<Membro, "id" | "nome" | "fotoPerfil" | "perfil">
+  })[]
 }
 
 export interface LimiteInstrumentoResponseDto {
@@ -17,6 +19,7 @@ export interface InscricaoResponseDto {
   membroId: string
   membroNome: string
   membroFoto: string | null
+  membroPerfil: string
   instrumento: string
   fazBacking: boolean
   ausente: boolean
@@ -68,6 +71,7 @@ export class CultoResponseDto {
         membroId: i.membroId,
         membroNome: i.membro.nome,
         membroFoto: i.membro.fotoPerfil ?? null,
+        membroPerfil: i.membro.perfil,
         instrumento: i.instrumento,
         fazBacking: i.fazBacking,
         ausente: i.ausente,

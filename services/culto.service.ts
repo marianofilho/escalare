@@ -32,6 +32,7 @@ export class CultoService {
     return this.cultoRepository.atualizar(id, dto)
   }
 
+  // Inscricao normal — membro se inscreve por conta propria
   async inscrever(cultoId: string, igrejaId: string, membroId: string, dto: InscricaoCultoDto) {
     const culto = await this.cultoRepository.findById(cultoId, igrejaId)
     if (!culto) throw new NaoEncontradoError("Culto", cultoId)
@@ -43,20 +44,37 @@ export class CultoService {
     const jaInscrito = await this.cultoRepository.findInscricao(cultoId, membroId)
     if (jaInscrito) throw new MembroJaInscritoError()
 
-    const limiteInstrumento = culto.limites.find((l) => l.instrumento === dto.instrumento)
-    if (limiteInstrumento) {
-      const inscritos = await this.cultoRepository.contarInscritosPorInstrumento(
-        cultoId,
-        dto.instrumento
-      )
-      if (inscritos >= limiteInstrumento.limite) {
-        throw new InstrumentoLotadoError(dto.instrumento)
-      }
-    }
+    await this._verificarLimite(cultoId, dto.instrumento, culto.limites)
 
     return this.cultoRepository.inscrever(
       cultoId,
       membroId,
+      dto.instrumento,
+      dto.fazBacking,
+      dto.comoInstrumentista ?? false
+    )
+  }
+
+  // Inscricao pelo admin — bypassa restricoes de status e inscricoes abertas
+  async inscreverComoAdmin(
+    cultoId: string,
+    igrejaId: string,
+    membroIdAlvo: string,
+    dto: InscricaoCultoDto
+  ) {
+    const culto = await this.cultoRepository.findById(cultoId, igrejaId)
+    if (!culto) throw new NaoEncontradoError("Culto", cultoId)
+
+    // Admin pode inscrever mesmo com culto fechado ou inscricoes encerradas
+    // mas nao pode inscrever alguem ja inscrito
+    const jaInscrito = await this.cultoRepository.findInscricao(cultoId, membroIdAlvo)
+    if (jaInscrito) throw new MembroJaInscritoError()
+
+    await this._verificarLimite(cultoId, dto.instrumento, culto.limites)
+
+    return this.cultoRepository.inscrever(
+      cultoId,
+      membroIdAlvo,
       dto.instrumento,
       dto.fazBacking,
       dto.comoInstrumentista ?? false
@@ -68,7 +86,7 @@ export class CultoService {
     if (!culto) throw new NaoEncontradoError("Culto", cultoId)
 
     const inscricao = await this.cultoRepository.findInscricao(cultoId, membroId)
-    if (!inscricao) throw new NaoEncontradoError("Inscrição", `${membroId}/${cultoId}`)
+    if (!inscricao) throw new NaoEncontradoError("Inscricao", `${membroId}/${cultoId}`)
 
     const agora = new Date()
     const inicioMs = culto.dataHoraInicio.getTime()
@@ -80,9 +98,34 @@ export class CultoService {
     return this.cultoRepository.cancelarInscricao(cultoId, membroId)
   }
 
+  // Admin cancela inscricao de qualquer membro sem restricao de prazo
+  async cancelarInscricaoComoAdmin(cultoId: string, igrejaId: string, membroIdAlvo: string) {
+    const culto = await this.cultoRepository.findById(cultoId, igrejaId)
+    if (!culto) throw new NaoEncontradoError("Culto", cultoId)
+
+    const inscricao = await this.cultoRepository.findInscricao(cultoId, membroIdAlvo)
+    if (!inscricao) throw new NaoEncontradoError("Inscricao", `${membroIdAlvo}/${cultoId}`)
+
+    return this.cultoRepository.cancelarInscricao(cultoId, membroIdAlvo)
+  }
+
   async marcarAusente(cultoId: string, igrejaId: string, membroId: string, ausente: boolean) {
     const culto = await this.cultoRepository.findById(cultoId, igrejaId)
     if (!culto) throw new NaoEncontradoError("Culto", cultoId)
     return this.cultoRepository.marcarAusente(cultoId, membroId, ausente)
+  }
+
+  private async _verificarLimite(
+    cultoId: string,
+    instrumento: string,
+    limites: { instrumento: string; limite: number }[]
+  ) {
+    const limiteInstrumento = limites.find((l) => l.instrumento === instrumento)
+    if (limiteInstrumento) {
+      const inscritos = await this.cultoRepository.contarInscritosPorInstrumento(cultoId, instrumento)
+      if (inscritos >= limiteInstrumento.limite) {
+        throw new InstrumentoLotadoError(instrumento)
+      }
+    }
   }
 }

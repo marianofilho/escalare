@@ -1,0 +1,8 @@
+// src/app/(dashboard)/repertorio/[cultoId]/imprimir/layout.tsx
+export default function ImprimirLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="min-h-screen bg-white">
+      {children}
+    </div>
+  )
+}

@@ -17,7 +17,7 @@ export const CriarCultoSchema = z.object({
     "OUTRO",
   ]),
   subtipo: z.string().optional(),
-  dataHoraInicio: z.string().datetime("Data/hora de início inválida"),
+  dataHoraInicio: z.string().datetime("Data/hora de inicio invalida"),
   dataHoraFim: z.string().datetime().optional(),
   cantorId: z.string().cuid().optional(),
   inscricoesAbertas: z.boolean().default(true),
@@ -35,11 +35,15 @@ export const AtualizarCultoSchema = CriarCultoSchema.partial().extend({
 
 export type AtualizarCultoDto = z.infer<typeof AtualizarCultoSchema>
 
-// Inscrição
+// Inscricao
 export const InscricaoCultoSchema = z.object({
-  instrumento: z.string().min(1, "Instrumento obrigatório"),
+  instrumento: z.string().min(1, "Instrumento obrigatorio"),
   fazBacking: z.boolean().default(false),
   comoInstrumentista: z.boolean().default(false),
+  // Apenas admin: inscrever outro membro no lugar do solicitante
+  membroIdAlvo: z.string().cuid().optional(),
+  // Apenas admin: ignora verificacoes de status e inscricoes abertas
+  forcarInscricao: z.boolean().default(false),
 })
 
 export type InscricaoCultoDto = z.infer<typeof InscricaoCultoSchema>

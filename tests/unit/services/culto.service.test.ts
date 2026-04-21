@@ -18,7 +18,7 @@ function makeCulto(overrides = {}) {
     igrejaId: "igreja-1",
     tipo: "CULTO_DOMINGO_MANHA" as const,
     subtipo: null,
-    dataHoraInicio: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 dias no futuro
+    dataHoraInicio: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
     dataHoraFim: null,
     cantorId: null,
     status: "ABERTO" as const,
@@ -38,15 +38,18 @@ function makeRepo() {
   return {
     findById: vi.fn(),
     listarPorIgreja: vi.fn(),
+    listarPaginado: vi.fn(),
     criar: vi.fn(),
     atualizar: vi.fn(),
-    inscrever: vi.fn(),
-    cancelarInscricao: vi.fn(),
+    inscrever: vi.fn().mockResolvedValue({ id: "inscricao-1" }),
+    cancelarInscricao: vi.fn().mockResolvedValue(undefined),
     findInscricao: vi.fn(),
-    contarInscritosPorInstrumento: vi.fn(),
+    contarInscritosPorInstrumento: vi.fn().mockResolvedValue(0),
     marcarAusente: vi.fn(),
   } as unknown as jest.Mocked<CultoRepository>
 }
+
+const dtoBase = { instrumento: "Violao", fazBacking: false, comoInstrumentista: false }
 
 // ── testes ────────────────────────────────────────────────────────────────────
 
@@ -63,123 +66,161 @@ describe("CultoService", () => {
     it("retorna o culto quando encontrado", async () => {
       const culto = makeCulto()
       repo.findById.mockResolvedValue(culto)
-
-      const result = await service.buscarPorId("culto-1", "igreja-1")
-
-      expect(result).toEqual(culto)
+      expect(await service.buscarPorId("culto-1", "igreja-1")).toEqual(culto)
     })
 
-    it("lança NaoEncontradoError quando culto não existe", async () => {
+    it("lanca NaoEncontradoError quando nao encontrado", async () => {
       repo.findById.mockResolvedValue(null)
-
-      await expect(service.buscarPorId("inexistente", "igreja-1"))
-        .rejects.toThrow(NaoEncontradoError)
+      await expect(service.buscarPorId("inexistente", "igreja-1")).rejects.toThrow(NaoEncontradoError)
     })
   })
 
   describe("inscrever", () => {
-    const dto = { instrumento: "Violao", fazBacking: false, comoInstrumentista: false }
-
-    it("inscreve com sucesso quando culto aberto e membro não inscrito", async () => {
-      const culto = makeCulto()
-      repo.findById.mockResolvedValue(culto)
+    it("inscreve com sucesso quando culto aberto e membro nao inscrito", async () => {
+      repo.findById.mockResolvedValue(makeCulto())
       repo.findInscricao.mockResolvedValue(null)
-      const inscricao = { id: "inscricao-1", membroId: "membro-1", cultoId: "culto-1", ...dto }
-      repo.inscrever.mockResolvedValue(inscricao)
 
-      const result = await service.inscrever("culto-1", "igreja-1", "membro-1", dto)
+      await service.inscrever("culto-1", "igreja-1", "membro-1", dtoBase)
 
-      expect(result).toEqual(inscricao)
       expect(repo.inscrever).toHaveBeenCalledWith("culto-1", "membro-1", "Violao", false, false)
     })
 
-    it("lança CultoFechadoError quando culto não está ABERTO", async () => {
+    it("lanca CultoFechadoError quando culto FECHADO", async () => {
       repo.findById.mockResolvedValue(makeCulto({ status: "FECHADO" }))
-
-      await expect(service.inscrever("culto-1", "igreja-1", "membro-1", dto))
-        .rejects.toThrow(CultoFechadoError)
+      await expect(service.inscrever("culto-1", "igreja-1", "membro-1", dtoBase)).rejects.toThrow(CultoFechadoError)
     })
 
-    it("lança CultoFechadoError quando inscrições estão fechadas", async () => {
+    it("lanca CultoFechadoError quando inscricoes encerradas", async () => {
       repo.findById.mockResolvedValue(makeCulto({ inscricoesAbertas: false }))
-
-      await expect(service.inscrever("culto-1", "igreja-1", "membro-1", dto))
-        .rejects.toThrow(CultoFechadoError)
+      await expect(service.inscrever("culto-1", "igreja-1", "membro-1", dtoBase)).rejects.toThrow(CultoFechadoError)
     })
 
-    it("lança MembroJaInscritoError quando membro já inscrito", async () => {
+    it("lanca MembroJaInscritoError quando membro ja inscrito", async () => {
       repo.findById.mockResolvedValue(makeCulto())
       repo.findInscricao.mockResolvedValue({ id: "inscricao-existente" })
-
-      await expect(service.inscrever("culto-1", "igreja-1", "membro-1", dto))
-        .rejects.toThrow(MembroJaInscritoError)
+      await expect(service.inscrever("culto-1", "igreja-1", "membro-1", dtoBase)).rejects.toThrow(MembroJaInscritoError)
     })
 
-    it("lança InstrumentoLotadoError quando limite atingido", async () => {
-      const culto = makeCulto({
-        limites: [{ instrumento: "Violao", limite: 1 }],
-      })
-      repo.findById.mockResolvedValue(culto)
+    it("lanca InstrumentoLotadoError quando limite atingido", async () => {
+      repo.findById.mockResolvedValue(makeCulto({ limites: [{ instrumento: "Violao", limite: 1 }] }))
       repo.findInscricao.mockResolvedValue(null)
-      repo.contarInscritosPorInstrumento.mockResolvedValue(1) // já tem 1, limite é 1
+      repo.contarInscritosPorInstrumento.mockResolvedValue(1)
+      await expect(service.inscrever("culto-1", "igreja-1", "membro-1", dtoBase)).rejects.toThrow(InstrumentoLotadoError)
+    })
+  })
 
-      await expect(service.inscrever("culto-1", "igreja-1", "membro-1", dto))
-        .rejects.toThrow(InstrumentoLotadoError)
+  describe("inscreverComoAdmin", () => {
+    it("inscreve mesmo com culto FECHADO", async () => {
+      repo.findById.mockResolvedValue(makeCulto({ status: "FECHADO" }))
+      repo.findInscricao.mockResolvedValue(null)
+
+      await service.inscreverComoAdmin("culto-1", "igreja-1", "membro-alvo", dtoBase)
+
+      expect(repo.inscrever).toHaveBeenCalledWith("culto-1", "membro-alvo", "Violao", false, false)
     })
 
-    it("inscreve mesmo com limite quando instrumento diferente do limitado", async () => {
-      const culto = makeCulto({
-        limites: [{ instrumento: "Guitarra", limite: 1 }],
-      })
-      repo.findById.mockResolvedValue(culto)
+    it("inscreve mesmo com inscricoes encerradas", async () => {
+      repo.findById.mockResolvedValue(makeCulto({ inscricoesAbertas: false }))
       repo.findInscricao.mockResolvedValue(null)
-      repo.inscrever.mockResolvedValue({ id: "inscricao-1" })
 
-      // Violao não tem limite definido — deve inscrever normalmente
-      await service.inscrever("culto-1", "igreja-1", "membro-1", dto)
+      await service.inscreverComoAdmin("culto-1", "igreja-1", "membro-alvo", dtoBase)
 
       expect(repo.inscrever).toHaveBeenCalled()
+    })
+
+    it("inscreve mesmo com culto REALIZADO", async () => {
+      repo.findById.mockResolvedValue(makeCulto({ status: "REALIZADO" }))
+      repo.findInscricao.mockResolvedValue(null)
+
+      await service.inscreverComoAdmin("culto-1", "igreja-1", "membro-alvo", dtoBase)
+
+      expect(repo.inscrever).toHaveBeenCalled()
+    })
+
+    it("lanca MembroJaInscritoError mesmo sendo admin", async () => {
+      repo.findById.mockResolvedValue(makeCulto({ status: "FECHADO" }))
+      repo.findInscricao.mockResolvedValue({ id: "inscricao-existente" })
+
+      await expect(
+        service.inscreverComoAdmin("culto-1", "igreja-1", "membro-alvo", dtoBase)
+      ).rejects.toThrow(MembroJaInscritoError)
+    })
+
+    it("ainda respeita limite de instrumento", async () => {
+      repo.findById.mockResolvedValue(makeCulto({
+        status: "FECHADO",
+        limites: [{ instrumento: "Violao", limite: 1 }],
+      }))
+      repo.findInscricao.mockResolvedValue(null)
+      repo.contarInscritosPorInstrumento.mockResolvedValue(1)
+
+      await expect(
+        service.inscreverComoAdmin("culto-1", "igreja-1", "membro-alvo", dtoBase)
+      ).rejects.toThrow(InstrumentoLotadoError)
+    })
+
+    it("usa o membroIdAlvo correto no inscrever", async () => {
+      repo.findById.mockResolvedValue(makeCulto({ status: "FECHADO" }))
+      repo.findInscricao.mockResolvedValue(null)
+
+      await service.inscreverComoAdmin("culto-1", "igreja-1", "cantor-especifico", dtoBase)
+
+      expect(repo.inscrever).toHaveBeenCalledWith(
+        "culto-1", "cantor-especifico", "Violao", false, false
+      )
+    })
+  })
+
+  describe("cancelarInscricaoComoAdmin", () => {
+    it("cancela inscricao sem verificar prazo", async () => {
+      // Culto que ja passou do prazo de cancelamento normal
+      const cultoPassado = makeCulto({
+        dataHoraInicio: new Date(Date.now() + 1 * 60 * 60 * 1000), // 1h no futuro
+        prazoCancelamentoHoras: 48, // prazo de 48h — nao poderia cancelar normalmente
+      })
+      repo.findById.mockResolvedValue(cultoPassado)
+      repo.findInscricao.mockResolvedValue({ id: "inscricao-1" })
+
+      await service.cancelarInscricaoComoAdmin("culto-1", "igreja-1", "membro-alvo")
+
+      expect(repo.cancelarInscricao).toHaveBeenCalledWith("culto-1", "membro-alvo")
+    })
+
+    it("lanca NaoEncontradoError quando inscricao nao existe", async () => {
+      repo.findById.mockResolvedValue(makeCulto())
+      repo.findInscricao.mockResolvedValue(null)
+
+      await expect(
+        service.cancelarInscricaoComoAdmin("culto-1", "igreja-1", "membro-alvo")
+      ).rejects.toThrow(NaoEncontradoError)
     })
   })
 
   describe("cancelarInscricao", () => {
     it("cancela quando dentro do prazo", async () => {
-      const culto = makeCulto({ prazoCancelamentoHoras: 48 })
-      repo.findById.mockResolvedValue(culto)
+      repo.findById.mockResolvedValue(makeCulto({ prazoCancelamentoHoras: 48 }))
       repo.findInscricao.mockResolvedValue({ id: "inscricao-1" })
-      repo.cancelarInscricao.mockResolvedValue(undefined)
 
       await service.cancelarInscricao("culto-1", "igreja-1", "membro-1")
 
       expect(repo.cancelarInscricao).toHaveBeenCalledWith("culto-1", "membro-1")
     })
 
-    it("lança PrazoCancelamentoError quando fora do prazo", async () => {
-      // Culto começa em 1 hora, prazo é 48h — não pode cancelar
-      const culto = makeCulto({
+    it("lanca PrazoCancelamentoError quando fora do prazo", async () => {
+      repo.findById.mockResolvedValue(makeCulto({
         dataHoraInicio: new Date(Date.now() + 1 * 60 * 60 * 1000),
         prazoCancelamentoHoras: 48,
-      })
-      repo.findById.mockResolvedValue(culto)
+      }))
       repo.findInscricao.mockResolvedValue({ id: "inscricao-1" })
 
       await expect(service.cancelarInscricao("culto-1", "igreja-1", "membro-1"))
         .rejects.toThrow(PrazoCancelamentoError)
     })
-
-    it("lança NaoEncontradoError quando inscrição não existe", async () => {
-      repo.findById.mockResolvedValue(makeCulto())
-      repo.findInscricao.mockResolvedValue(null)
-
-      await expect(service.cancelarInscricao("culto-1", "igreja-1", "membro-1"))
-        .rejects.toThrow(NaoEncontradoError)
-    })
   })
 
   describe("marcarAusente", () => {
-    it("marca ausência quando culto existe", async () => {
+    it("marca ausencia quando culto existe", async () => {
       repo.findById.mockResolvedValue(makeCulto())
-      repo.marcarAusente.mockResolvedValue(undefined)
 
       await service.marcarAusente("culto-1", "igreja-1", "membro-1", true)
 

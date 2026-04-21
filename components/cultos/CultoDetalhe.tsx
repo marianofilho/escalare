@@ -5,6 +5,7 @@ import { useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import type { CultoResponseDto, InscricaoResponseDto } from "@/dtos/culto/culto-response.dto"
+import type { MembroResponseDto } from "@/dtos/membro/membro-response.dto"
 
 const TIPO_LABEL: Record<string, string> = {
   CULTO_DOMINGO_MANHA: "Culto Domingo Manha",
@@ -53,6 +54,7 @@ interface CultoDetalheProps {
   membroId: string
   isAdmin: boolean
   isCantor?: boolean
+  membrosDisponiveis?: MembroResponseDto[]
 }
 
 function Avatar({ nome, foto, destaque }: { nome: string; foto: string | null; destaque?: boolean }) {
@@ -60,29 +62,35 @@ function Avatar({ nome, foto, destaque }: { nome: string; foto: string | null; d
     <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${
       destaque ? "bg-violet-200 text-violet-800 ring-2 ring-violet-400" : "bg-zinc-200 text-zinc-600"
     }`}>
-      {foto
-        ? <img src={foto} alt={nome} className="w-8 h-8 rounded-full object-cover" />
-        : nome[0].toUpperCase()
-      }
+      {foto ? <img src={foto} alt={nome} className="w-8 h-8 rounded-full object-cover" /> : nome[0].toUpperCase()}
     </div>
   )
 }
 
 function InscritoCard({
-  inscricao, isMe, isAdmin, cultoId, onAusenciaToggle,
+  inscricao, isMe, isAdmin, cultoId, onAusenciaToggle, onCancelarAdmin,
 }: {
   inscricao: InscricaoResponseDto
   isMe: boolean
   isAdmin: boolean
   cultoId: string
   onAusenciaToggle: (membroId: string, ausente: boolean) => Promise<void>
+  onCancelarAdmin: (membroId: string) => Promise<void>
 }) {
   const [toggling, setToggling] = useState(false)
+  const [cancelando, setCancelando] = useState(false)
 
   async function handleToggle() {
     setToggling(true)
     await onAusenciaToggle(inscricao.membroId, !inscricao.ausente)
     setToggling(false)
+  }
+
+  async function handleCancelar() {
+    if (!confirm(`Cancelar inscricao de ${inscricao.membroNome}?`)) return
+    setCancelando(true)
+    await onCancelarAdmin(inscricao.membroId)
+    setCancelando(false)
   }
 
   return (
@@ -107,21 +115,130 @@ function InscritoCard({
         </div>
       </div>
       {isAdmin && (
-        <button
-          onClick={handleToggle}
-          disabled={toggling}
-          className={`text-xs px-2.5 py-1 rounded-lg border transition-colors disabled:opacity-50 shrink-0 ${
-            inscricao.ausente ? "border-zinc-200 text-zinc-500 hover:bg-zinc-50" : "border-red-200 text-red-500 hover:bg-red-50"
-          }`}
-        >
-          {toggling ? "..." : inscricao.ausente ? "Presente" : "Ausente"}
-        </button>
+        <div className="flex items-center gap-1.5 shrink-0">
+          <button onClick={handleToggle} disabled={toggling}
+            className={`text-xs px-2 py-1 rounded-lg border transition-colors disabled:opacity-50 ${
+              inscricao.ausente ? "border-zinc-200 text-zinc-500 hover:bg-zinc-50" : "border-amber-200 text-amber-600 hover:bg-amber-50"
+            }`}>
+            {toggling ? "..." : inscricao.ausente ? "Presente" : "Ausente"}
+          </button>
+          <button onClick={handleCancelar} disabled={cancelando}
+            className="text-xs px-2 py-1 rounded-lg border border-red-200 text-red-500 hover:bg-red-50 transition-colors disabled:opacity-50">
+            {cancelando ? "..." : "Remover"}
+          </button>
+        </div>
       )}
     </div>
   )
 }
 
-export default function CultoDetalhe({ culto, repertorio, membroId, isAdmin, isCantor = false }: CultoDetalheProps) {
+// Painel exclusivo do admin para inscrever membros
+function PainelInscricaoAdmin({
+  cultoId,
+  membrosDisponiveis,
+  inscricoes,
+  onInscrever,
+}: {
+  cultoId: string
+  membrosDisponiveis: MembroResponseDto[]
+  inscricoes: InscricaoResponseDto[]
+  onInscrever: (membroIdAlvo: string, instrumento: string, fazBacking: boolean, comoInstrumentista: boolean) => Promise<void>
+}) {
+  const [membroSelecionado, setMembroSelecionado] = useState("")
+  const [instrumento, setInstrumento] = useState("")
+  const [fazBacking, setFazBacking] = useState(false)
+  const [comoInstrumentista, setComoInstrumentista] = useState(false)
+  const [inscrevendo, setInscrevendo] = useState(false)
+  const [erro, setErro] = useState<string | null>(null)
+  const [aberto, setAberto] = useState(false)
+
+  // Filtra membros que nao estao inscritos ainda
+  const membrosNaoInscritos = membrosDisponiveis.filter(
+    (m) => !inscricoes.some((i) => i.membroId === m.id)
+  )
+
+  async function handleInscrever() {
+    if (!membroSelecionado) { setErro("Selecione um membro"); return }
+    if (!instrumento) { setErro("Selecione um instrumento"); return }
+    setInscrevendo(true)
+    setErro(null)
+    await onInscrever(membroSelecionado, instrumento, fazBacking, comoInstrumentista)
+    setMembroSelecionado("")
+    setInstrumento("")
+    setFazBacking(false)
+    setComoInstrumentista(false)
+    setAberto(false)
+    setInscrevendo(false)
+  }
+
+  if (!aberto) {
+    return (
+      <button
+        onClick={() => setAberto(true)}
+        className="text-sm px-4 py-2 border border-violet-200 text-violet-600 rounded-xl hover:bg-violet-50 transition-colors"
+      >
+        + Inscrever membro
+      </button>
+    )
+  }
+
+  return (
+    <div className="bg-violet-50 border border-violet-200 rounded-xl p-4 space-y-3">
+      <p className="text-sm font-semibold text-violet-800">Inscrever membro</p>
+
+      {erro && (
+        <p className="text-xs text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">{erro}</p>
+      )}
+
+      {membrosNaoInscritos.length === 0 ? (
+        <p className="text-sm text-zinc-400">Todos os membros ativos ja estao inscritos.</p>
+      ) : (
+        <div className="space-y-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <select value={membroSelecionado} onChange={(e) => { setMembroSelecionado(e.target.value); setErro(null) }}
+              className="rounded-lg border border-zinc-200 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-violet-500">
+              <option value="">Selecionar membro...</option>
+              {membrosNaoInscritos.map((m) => (
+                <option key={m.id} value={m.id}>{m.nome}</option>
+              ))}
+            </select>
+            <select value={instrumento} onChange={(e) => { setInstrumento(e.target.value); setErro(null) }}
+              className="rounded-lg border border-zinc-200 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-violet-500">
+              <option value="">Selecionar instrumento...</option>
+              {INSTRUMENTOS.map((i) => <option key={i} value={i}>{i}</option>)}
+            </select>
+          </div>
+          <div className="flex items-center gap-4 flex-wrap">
+            <label className="flex items-center gap-2 text-xs text-zinc-600 cursor-pointer">
+              <input type="checkbox" checked={fazBacking} onChange={(e) => setFazBacking(e.target.checked)}
+                className="rounded border-zinc-300 text-violet-600" />
+              Backing vocal
+            </label>
+            <label className="flex items-center gap-2 text-xs text-amber-700 cursor-pointer">
+              <input type="checkbox" checked={comoInstrumentista} onChange={(e) => setComoInstrumentista(e.target.checked)}
+                className="rounded border-amber-300 text-amber-600" />
+              So como instrumentista
+            </label>
+          </div>
+          <div className="flex items-center gap-2">
+            <button onClick={handleInscrever} disabled={inscrevendo}
+              className="px-4 py-2 text-sm font-medium bg-violet-600 text-white rounded-xl hover:bg-violet-700 disabled:opacity-50 transition-colors">
+              {inscrevendo ? "Inscrevendo..." : "Confirmar"}
+            </button>
+            <button onClick={() => { setAberto(false); setErro(null) }}
+              className="px-4 py-2 text-sm text-zinc-500 hover:text-zinc-700 transition-colors">
+              Cancelar
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+export default function CultoDetalhe({
+  culto, repertorio, membroId, isAdmin, isCantor = false, membrosDisponiveis = [],
+}: CultoDetalheProps) {
   const router = useRouter()
   const [inscricoes, setInscricoes] = useState<InscricaoResponseDto[]>(culto.inscricoes)
   const [inscrevendo, setInscrevendo] = useState(false)
@@ -140,8 +257,7 @@ export default function CultoDetalhe({ culto, repertorio, membroId, isAdmin, isC
 
   async function handleInscrever() {
     if (!instrumento) { setErro("Selecione um instrumento"); return }
-    setInscrevendo(true)
-    setErro(null)
+    setInscrevendo(true); setErro(null)
     const res = await fetch(`/api/cultos/${culto.id}/inscricoes`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -153,10 +269,7 @@ export default function CultoDetalhe({ culto, repertorio, membroId, isAdmin, isC
       id: data.id, membroId, membroNome: data.membroNome ?? "Voce",
       membroFoto: null, instrumento, fazBacking, ausente: false, comoInstrumentista,
     }])
-    setMostrarForm(false)
-    setInstrumento("")
-    setComoInstrumentista(false)
-    setInscrevendo(false)
+    setMostrarForm(false); setInstrumento(""); setInscrevendo(false)
     router.refresh()
   }
 
@@ -164,14 +277,9 @@ export default function CultoDetalhe({ culto, repertorio, membroId, isAdmin, isC
     if (!confirm("Cancelar inscricao neste culto?")) return
     setCancelando(true)
     const res = await fetch(`/api/cultos/${culto.id}/inscricoes`, { method: "DELETE" })
-    if (res.ok) {
-      setInscricoes((prev) => prev.filter((i) => i.membroId !== membroId))
-    } else {
-      const data = await res.json()
-      alert(data.error ?? "Erro ao cancelar inscricao")
-    }
-    setCancelando(false)
-    router.refresh()
+    if (res.ok) setInscricoes((prev) => prev.filter((i) => i.membroId !== membroId))
+    else alert((await res.json()).error ?? "Erro ao cancelar")
+    setCancelando(false); router.refresh()
   }
 
   async function handleAusenciaToggle(mId: string, ausente: boolean) {
@@ -180,13 +288,57 @@ export default function CultoDetalhe({ culto, repertorio, membroId, isAdmin, isC
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ ausente }),
     })
+    if (res.ok) setInscricoes((prev) => prev.map((i) => (i.membroId === mId ? { ...i, ausente } : i)))
+  }
+
+  async function handleCancelarAdmin(mIdAlvo: string) {
+    const res = await fetch(`/api/cultos/${culto.id}/inscricoes/${mIdAlvo}`, { method: "DELETE" })
     if (res.ok) {
-      setInscricoes((prev) => prev.map((i) => (i.membroId === mId ? { ...i, ausente } : i)))
+      setInscricoes((prev) => prev.filter((i) => i.membroId !== mIdAlvo))
+      router.refresh()
+    } else {
+      alert((await res.json()).error ?? "Erro ao remover inscricao")
     }
   }
 
-  const podeInscrever = culto.status === "ABERTO" && culto.inscricoesAbertas && !jaInscrito
+  async function handleInscreverAdmin(
+    membroIdAlvo: string,
+    inst: string,
+    backing: boolean,
+    instrumentista: boolean
+  ) {
+    const res = await fetch(`/api/cultos/${culto.id}/inscricoes`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        membroIdAlvo,
+        instrumento: inst,
+        fazBacking: backing,
+        comoInstrumentista: instrumentista,
+        forcarInscricao: true,
+      }),
+    })
+    const data = await res.json()
+    if (!res.ok) { alert(data.error ?? "Erro ao inscrever membro"); return }
 
+    // Adiciona o membro inscrito na lista local
+    const membro = membrosDisponiveis.find((m) => m.id === membroIdAlvo)
+    if (membro) {
+      setInscricoes((prev) => [...prev, {
+        id: data.id,
+        membroId: membro.id,
+        membroNome: membro.nome,
+        membroFoto: membro.fotoPerfil ?? null,
+        instrumento: inst,
+        fazBacking: backing,
+        ausente: false,
+        comoInstrumentista: instrumentista,
+      }])
+    }
+    router.refresh()
+  }
+
+  const podeInscrever = culto.status === "ABERTO" && culto.inscricoesAbertas && !jaInscrito
   const porInstrumento = inscricoes.reduce<Record<string, InscricaoResponseDto[]>>((acc, i) => {
     acc[i.instrumento] = [...(acc[i.instrumento] ?? []), i]
     return acc
@@ -230,21 +382,15 @@ export default function CultoDetalhe({ culto, repertorio, membroId, isAdmin, isC
           </div>
           {culto.limites.map((l) => {
             const inscritos = inscricoes.filter((i) => i.instrumento === l.instrumento).length
-            const cheio = inscritos >= l.limite
             return (
               <div key={l.instrumento} className="text-center">
-                <p className={`text-xl font-bold ${cheio ? "text-red-500" : "text-zinc-900"}`}>
+                <p className={`text-xl font-bold ${inscritos >= l.limite ? "text-red-500" : "text-zinc-900"}`}>
                   {inscritos}/{l.limite}
                 </p>
                 <p className="text-xs text-zinc-400">{l.instrumento}</p>
               </div>
             )
           })}
-          {culto.prazoCancelamentoHoras > 0 && (
-            <p className="text-xs text-zinc-400 ml-auto">
-              Cancelamento ate {culto.prazoCancelamentoHoras}h antes
-            </p>
-          )}
         </div>
 
         {isAdmin && culto.observacoesInternas && (
@@ -280,7 +426,7 @@ export default function CultoDetalhe({ culto, repertorio, membroId, isAdmin, isC
       </div>
 
       {/* Inscricao do membro */}
-      {culto.status === "ABERTO" && culto.inscricoesAbertas && (
+      {culto.status === "ABERTO" && culto.inscricoesAbertas && !isAdmin && (
         <div className="bg-white border border-zinc-200 rounded-2xl p-5 space-y-3">
           <h2 className="text-sm font-semibold text-zinc-800">Minha participacao</h2>
           {jaInscrito ? (
@@ -294,15 +440,13 @@ export default function CultoDetalhe({ culto, repertorio, membroId, isAdmin, isC
                 </span>
               </div>
               <button onClick={handleCancelar} disabled={cancelando}
-                className="text-xs text-red-500 hover:text-red-700 transition-colors disabled:opacity-50">
+                className="text-xs text-red-500 hover:text-red-700 disabled:opacity-50">
                 {cancelando ? "Cancelando..." : "Cancelar inscricao"}
               </button>
             </div>
           ) : mostrarForm ? (
             <div className="space-y-3">
-              {erro && (
-                <p className="text-xs text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">{erro}</p>
-              )}
+              {erro && <p className="text-xs text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">{erro}</p>}
               <div className="flex flex-wrap items-center gap-3">
                 <select value={instrumento} onChange={(e) => setInstrumento(e.target.value)}
                   className="rounded-lg border border-zinc-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500">
@@ -310,40 +454,50 @@ export default function CultoDetalhe({ culto, repertorio, membroId, isAdmin, isC
                   {INSTRUMENTOS.map((i) => <option key={i} value={i}>{i}</option>)}
                 </select>
                 <label className="flex items-center gap-2 text-sm text-zinc-600 cursor-pointer">
-                  <input type="checkbox" checked={fazBacking}
-                    onChange={(e) => setFazBacking(e.target.checked)}
-                    className="rounded border-zinc-300 text-violet-600 focus:ring-violet-500" />
+                  <input type="checkbox" checked={fazBacking} onChange={(e) => setFazBacking(e.target.checked)}
+                    className="rounded border-zinc-300 text-violet-600" />
                   Backing vocal
                 </label>
-                {/* Checkbox apenas para cantores */}
                 {isCantor && (
                   <label className="flex items-center gap-2 text-sm text-amber-700 cursor-pointer bg-amber-50 border border-amber-100 px-3 py-1.5 rounded-lg">
-                    <input type="checkbox" checked={comoInstrumentista}
-                      onChange={(e) => setComoInstrumentista(e.target.checked)}
-                      className="rounded border-amber-300 text-amber-600 focus:ring-amber-500" />
-                    Participar so como instrumentista
+                    <input type="checkbox" checked={comoInstrumentista} onChange={(e) => setComoInstrumentista(e.target.checked)}
+                      className="rounded border-amber-300 text-amber-600" />
+                    So como instrumentista
                   </label>
                 )}
               </div>
               <div className="flex items-center gap-2">
                 <button onClick={handleInscrever} disabled={inscrevendo}
-                  className="px-4 py-2 text-sm font-medium bg-violet-600 text-white rounded-xl hover:bg-violet-700 disabled:opacity-50 transition-colors">
+                  className="px-4 py-2 text-sm font-medium bg-violet-600 text-white rounded-xl hover:bg-violet-700 disabled:opacity-50">
                   {inscrevendo ? "Inscrevendo..." : "Confirmar inscricao"}
                 </button>
                 <button onClick={() => { setMostrarForm(false); setErro(null) }}
-                  className="px-4 py-2 text-sm text-zinc-500 hover:text-zinc-700 transition-colors">
-                  Cancelar
-                </button>
+                  className="px-4 py-2 text-sm text-zinc-500">Cancelar</button>
               </div>
             </div>
           ) : podeInscrever ? (
             <button onClick={() => setMostrarForm(true)}
-              className="px-4 py-2 text-sm font-medium bg-violet-600 text-white rounded-xl hover:bg-violet-700 transition-colors">
+              className="px-4 py-2 text-sm font-medium bg-violet-600 text-white rounded-xl hover:bg-violet-700">
               Inscrever-me neste culto
             </button>
           ) : (
             <p className="text-sm text-zinc-400">Inscricoes encerradas.</p>
           )}
+        </div>
+      )}
+
+      {/* Painel de inscricao pelo admin */}
+      {isAdmin && (
+        <div className="bg-white border border-zinc-200 rounded-2xl p-5 space-y-3">
+          <div className="flex items-center justify-between">
+            <h2 className="text-sm font-semibold text-zinc-800">Gerenciar inscricoes</h2>
+          </div>
+          <PainelInscricaoAdmin
+            cultoId={culto.id}
+            membrosDisponiveis={membrosDisponiveis}
+            inscricoes={inscricoes}
+            onInscrever={handleInscreverAdmin}
+          />
         </div>
       )}
 
@@ -368,6 +522,7 @@ export default function CultoDetalhe({ culto, repertorio, membroId, isAdmin, isC
                       isAdmin={isAdmin}
                       cultoId={culto.id}
                       onAusenciaToggle={handleAusenciaToggle}
+                      onCancelarAdmin={handleCancelarAdmin}
                     />
                   ))}
                 </div>

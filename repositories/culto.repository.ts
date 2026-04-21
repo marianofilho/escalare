@@ -11,7 +11,7 @@ import {
 const inscricoesInclude = {
   inscricoes: {
     include: {
-      membro: { select: { id: true, nome: true, fotoPerfil: true } },
+      membro: { select: { id: true, nome: true, fotoPerfil: true, perfil: true } },
     },
   },
 } as const
@@ -103,7 +103,7 @@ export class CultoRepository {
   async inscrever(cultoId: string, membroId: string, instrumento: string, fazBacking: boolean, comoInstrumentista: boolean) {
     return prisma.inscricaoCulto.create({
       data: { cultoId, membroId, instrumento, fazBacking, comoInstrumentista },
-      include: { membro: { select: { id: true, nome: true, fotoPerfil: true } } },
+      include: { membro: { select: { id: true, nome: true, fotoPerfil: true, perfil: true } } },
     })
   }
 
