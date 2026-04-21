@@ -11,6 +11,8 @@ import { RepertorioRepository } from "@/repositories/repertorio.repository"
 import { RepertorioService } from "@/services/repertorio.service"
 import { SolicitacaoRepository } from "@/repositories/solicitacao.repository"
 import { SolicitacaoService } from "@/services/solicitacao.service"
+import { BuscaRepository } from "@/repositories/busca.repository"
+import { BuscaService } from "@/services/busca.service"
 
 export function makeCultoService(): CultoService {
   return new CultoService(new CultoRepository())
@@ -43,4 +45,8 @@ export function makeSolicitacaoService(): SolicitacaoService {
     new MusicaRepository(),
     new MembroRepository()
   )
+}
+
+export function makeBuscaService(): BuscaService {
+  return new BuscaService(new BuscaRepository())
 }
