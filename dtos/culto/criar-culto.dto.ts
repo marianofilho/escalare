@@ -39,6 +39,7 @@ export type AtualizarCultoDto = z.infer<typeof AtualizarCultoSchema>
 export const InscricaoCultoSchema = z.object({
   instrumento: z.string().min(1, "Instrumento obrigatório"),
   fazBacking: z.boolean().default(false),
+  comoInstrumentista: z.boolean().default(false),
 })
 
 export type InscricaoCultoDto = z.infer<typeof InscricaoCultoSchema>

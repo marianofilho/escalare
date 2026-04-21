@@ -10,13 +10,14 @@ export async function GET(request: Request): Promise<NextResponse> {
   try {
     const supabase = await createSupabaseServerClient()
     const { data: { session } } = await supabase.auth.getSession()
-    if (!session) return NextResponse.json({ error: "Não autorizado" }, { status: 401 })
+    if (!session) return NextResponse.json({ error: "Nao autorizado" }, { status: 401 })
 
     const igrejaId = session.user.user_metadata?.igrejaId as string
     const { searchParams } = new URL(request.url)
     const status = searchParams.get("status") ?? undefined
     const busca = searchParams.get("busca") ?? undefined
 
+    // Todos os perfis veem o catálogo completo
     const musicas = await makeMusicaService().listar(igrejaId, { status, busca })
     return NextResponse.json(musicas.map(MusicaResponseDto.from))
   } catch (error) {
@@ -28,7 +29,7 @@ export async function POST(request: Request): Promise<NextResponse> {
   try {
     const supabase = await createSupabaseServerClient()
     const { data: { session } } = await supabase.auth.getSession()
-    if (!session) return NextResponse.json({ error: "Não autorizado" }, { status: 401 })
+    if (!session) return NextResponse.json({ error: "Nao autorizado" }, { status: 401 })
 
     const igrejaId = session.user.user_metadata?.igrejaId as string
     const membroId = session.user.user_metadata?.membroId as string

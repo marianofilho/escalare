@@ -2,39 +2,41 @@
 import Link from "next/link"
 import { createSupabaseServerClient } from "@/lib/supabase-server"
 import { redirect } from "next/navigation"
-import { authService } from "@/services/auth.service"
+import { makeMembroService } from "@/lib/factories"
 import MusicaLista from "@/components/musicas/MusicaLista"
+
+export const dynamic = "force-dynamic"
 
 export default async function MusicasPage() {
   const supabase = await createSupabaseServerClient()
   const { data: { session } } = await supabase.auth.getSession()
   if (!session) redirect("/login")
 
-  // user_metadata.perfil é preenchido no login pelo auth.service
-  // Fallback para busca no banco caso o metadata ainda seja antigo (ex: sessão anterior ao deploy)
-  let perfil = session.user.user_metadata?.perfil as string | undefined
-  if (!perfil) {
-    const usuario = await authService.me(session.user.id)
-    perfil = usuario.perfil
-  }
+  const igrejaId = session.user.user_metadata?.igrejaId as string
+  const membroId = session.user.user_metadata?.membroId as string
 
-  const isAdmin = perfil === "ADMINISTRADOR"
+  // Busca perfil no banco — fonte de verdade, evita problema de sessão desatualizada
+  const membro = await makeMembroService().buscarPorId(membroId, igrejaId)
+  const isAdmin = membro.perfil === "ADMINISTRADOR"
+  const isCantor = membro.perfil === "CANTOR"
 
   return (
     <div className="max-w-5xl mx-auto px-6 py-10">
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-2xl font-bold text-zinc-900">Músicas</h1>
-          <p className="text-sm text-zinc-400 mt-0.5">Catálogo de músicas do ministério</p>
+          <h1 className="text-2xl font-bold text-zinc-900">Musicas</h1>
+          <p className="text-sm text-zinc-400 mt-0.5">Catalogo de musicas do ministerio</p>
         </div>
         {isAdmin && (
-          <Link href="/musicas/nova"
-            className="px-4 py-2 bg-violet-600 text-white text-sm font-medium rounded-lg hover:bg-violet-700 transition-colors">
-            + Nova música
+          <Link
+            href="/musicas/nova"
+            className="px-4 py-2 bg-violet-600 text-white text-sm font-medium rounded-lg hover:bg-violet-700 transition-colors"
+          >
+            + Nova musica
           </Link>
         )}
       </div>
-      <MusicaLista isAdmin={isAdmin} />
+      <MusicaLista isAdmin={isAdmin} isCantor={isCantor} membroId={membroId} />
     </div>
   )
 }

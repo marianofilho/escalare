@@ -39,44 +39,28 @@ export class RepertorioService {
     return this.repertorioRepository.findByCulto(cultoId)
   }
 
-  // cantorId agora vem da page (derivado das inscrições), não do campo Culto.cantorId
   async criar(cultoId: string, igrejaId: string, membroId: string, cantorId: string) {
     const culto = await this.cultoRepository.findById(cultoId, igrejaId)
     if (!culto) throw new NaoEncontradoError("Culto", cultoId)
-
     if (!cantorId) throw new CultoSemCantorError()
-
     await this.exigirPermissao(membroId, igrejaId, cantorId)
-
     const existente = await this.repertorioRepository.findByCulto(cultoId)
     if (existente) throw new RepertorioJaExisteError()
-
     return this.repertorioRepository.criar(cultoId, cantorId)
   }
 
-  async adicionarItem(
-    cultoId: string,
-    igrejaId: string,
-    membroId: string,
-    dto: AdicionarItemDto
-  ) {
+  async adicionarItem(cultoId: string, igrejaId: string, membroId: string, dto: AdicionarItemDto) {
     const culto = await this.cultoRepository.findById(cultoId, igrejaId)
     if (!culto) throw new NaoEncontradoError("Culto", cultoId)
-
     const repertorio = await this.repertorioRepository.findByCulto(cultoId)
-    if (!repertorio) throw new NaoEncontradoError("Repertório", cultoId)
-
+    if (!repertorio) throw new NaoEncontradoError("Repertorio", cultoId)
     await this.exigirPermissao(membroId, igrejaId, repertorio.cantorId)
-
     const jaExiste = await this.repertorioRepository.findItemPorMusica(repertorio.id, dto.musicaId)
     if (jaExiste) throw new MusicaJaNoRepertorioError()
-
     const musica = await this.musicaRepository.findById(dto.musicaId, igrejaId)
-    if (!musica) throw new NaoEncontradoError("Música", dto.musicaId)
-
+    if (!musica) throw new NaoEncontradoError("Musica", dto.musicaId)
     const vincCantor = musica.cantores.find((mc) => mc.cantorId === repertorio.cantorId)
     if (!vincCantor) throw new MusicaSemTomError(musica.titulo)
-
     return this.repertorioRepository.adicionarItem(repertorio.id, dto.musicaId, vincCantor.tom, dto)
   }
 
@@ -88,29 +72,27 @@ export class RepertorioService {
     dto: AtualizarItemDto
   ) {
     const repertorio = await this.repertorioRepository.findByCulto(cultoId)
-    if (!repertorio) throw new NaoEncontradoError("Repertório", cultoId)
-
+    if (!repertorio) throw new NaoEncontradoError("Repertorio", cultoId)
     await this.exigirPermissao(membroId, igrejaId, repertorio.cantorId)
-
     const item = await this.repertorioRepository.findItem(itemId)
     if (!item) throw new NaoEncontradoError("Item", itemId)
-
     return this.repertorioRepository.atualizarItem(itemId, dto)
   }
 
   async removerItem(cultoId: string, itemId: string, igrejaId: string, membroId: string) {
     const repertorio = await this.repertorioRepository.findByCulto(cultoId)
-    if (!repertorio) throw new NaoEncontradoError("Repertório", cultoId)
-
+    if (!repertorio) throw new NaoEncontradoError("Repertorio", cultoId)
     await this.exigirPermissao(membroId, igrejaId, repertorio.cantorId)
-
     const item = await this.repertorioRepository.findItem(itemId)
     if (!item) throw new NaoEncontradoError("Item", itemId)
-
     return this.repertorioRepository.removerItem(itemId)
   }
 
   async listarCultosDoMembro(igrejaId: string, membroId: string) {
     return this.repertorioRepository.listarCultosComRepertorio(igrejaId, membroId)
+  }
+
+  async listarHistoricoDoMembro(igrejaId: string, membroId: string) {
+    return this.repertorioRepository.listarHistorico(igrejaId, membroId)
   }
 }

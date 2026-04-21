@@ -9,7 +9,7 @@ import type { MembroResponseDto } from "@/dtos/membro/membro-response.dto"
 const PERFIL_LABEL: Record<string, string> = {
   ADMINISTRADOR: "Administrador",
   CANTOR: "Cantor(a)",
-  MUSICO: "Músico",
+  MUSICO: "Musico",
   BACKING_VOCAL: "Backing Vocal",
 }
 
@@ -67,7 +67,7 @@ export default function MembroLista({ isAdmin }: MembroListaProps) {
           <option value="">Todos os perfis</option>
           <option value="ADMINISTRADOR">Administrador</option>
           <option value="CANTOR">Cantor(a)</option>
-          <option value="MUSICO">Músico</option>
+          <option value="MUSICO">Musico</option>
           <option value="BACKING_VOCAL">Backing Vocal</option>
         </select>
         <div className="flex rounded-lg border border-zinc-200 overflow-hidden text-sm">
@@ -119,7 +119,7 @@ export default function MembroLista({ isAdmin }: MembroListaProps) {
                 <th className="text-left px-4 py-3 font-medium text-zinc-500">Membro</th>
                 <th className="text-left px-4 py-3 font-medium text-zinc-500 hidden sm:table-cell">Perfil</th>
                 <th className="text-left px-4 py-3 font-medium text-zinc-500 hidden md:table-cell">Instrumento</th>
-                {isAdmin && <th className="px-4 py-3" />}
+                <th className="px-4 py-3" />
               </tr>
             </thead>
             <tbody className="divide-y divide-zinc-100">
@@ -162,15 +162,17 @@ function MembroRow({
   return (
     <tr className="hover:bg-zinc-50 transition-colors">
       <td className="px-4 py-3">
-        <div className="flex items-center gap-3">
+        <Link href={`/membros/${membro.id}`} className="flex items-center gap-3 group">
           <div className="w-8 h-8 rounded-full bg-violet-100 flex items-center justify-center text-xs font-semibold text-violet-700 shrink-0">
             {iniciais}
           </div>
           <div>
-            <p className="font-medium text-zinc-800">{membro.nome}</p>
+            <p className="font-medium text-zinc-800 group-hover:text-violet-700 transition-colors">
+              {membro.nome}
+            </p>
             <p className="text-xs text-zinc-400">{membro.email}</p>
           </div>
-        </div>
+        </Link>
       </td>
       <td className="px-4 py-3 hidden sm:table-cell">
         <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${PERFIL_COR[membro.perfil]}`}>
@@ -180,26 +182,34 @@ function MembroRow({
       <td className="px-4 py-3 hidden md:table-cell text-zinc-500">
         {membro.instrumentoPrincipal ?? <span className="text-zinc-300">—</span>}
       </td>
-      {isAdmin && (
-        <td className="px-4 py-3 text-right">
-          <div className="flex items-center justify-end gap-2">
-            <Link
-              href={`/membros/${membro.id}/editar`}
-              className="text-xs text-violet-600 hover:text-violet-800 transition-colors"
-            >
-              Editar
-            </Link>
-            {membro.status === "ATIVO" && (
-              <button
-                onClick={() => onInativar(membro.id)}
-                className="text-xs text-zinc-400 hover:text-red-600 transition-colors"
+      <td className="px-4 py-3 text-right">
+        <div className="flex items-center justify-end gap-2">
+          <Link
+            href={`/membros/${membro.id}`}
+            className="text-xs text-zinc-400 hover:text-violet-600 transition-colors"
+          >
+            Ver →
+          </Link>
+          {isAdmin && (
+            <>
+              <Link
+                href={`/membros/${membro.id}/editar`}
+                className="text-xs text-violet-600 hover:text-violet-800 transition-colors"
               >
-                Inativar
-              </button>
-            )}
-          </div>
-        </td>
-      )}
+                Editar
+              </Link>
+              {membro.status === "ATIVO" && (
+                <button
+                  onClick={() => onInativar(membro.id)}
+                  className="text-xs text-zinc-400 hover:text-red-600 transition-colors"
+                >
+                  Inativar
+                </button>
+              )}
+            </>
+          )}
+        </div>
+      </td>
     </tr>
   )
 }

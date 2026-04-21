@@ -14,11 +14,12 @@ import {
   RepertorioJaExisteError, MusicaJaNoRepertorioError,
   CultoSemCantorError, SemPermissaoRepertorioError, MusicaSemTomError,
 } from "@/types/repertorio-errors"
+import { SolicitacaoJaExisteError } from "@/services/solicitacao.service"
 
 export function handleApiError(error: unknown): NextResponse {
   if (error instanceof ZodError) {
     return NextResponse.json(
-      { error: "Dados inválidos", detalhes: error.flatten().fieldErrors },
+      { error: "Dados invalidos", detalhes: error.flatten().fieldErrors },
       { status: 422 }
     )
   }
@@ -27,7 +28,8 @@ export function handleApiError(error: unknown): NextResponse {
     error instanceof MembroJaInscritoError ||
     error instanceof CantorJaVinculadoError ||
     error instanceof RepertorioJaExisteError ||
-    error instanceof MusicaJaNoRepertorioError
+    error instanceof MusicaJaNoRepertorioError ||
+    error instanceof SolicitacaoJaExisteError
   ) {
     return NextResponse.json({ error: error.message }, { status: 409 })
   }

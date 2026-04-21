@@ -2,7 +2,6 @@
 import { prisma } from "@/lib/prisma"
 import type { AdicionarItemDto, AtualizarItemDto } from "@/dtos/repertorio/criar-repertorio.dto"
 
-// Include reutilizado em todas as queries de repertório
 const repertorioInclude = {
   cantor: { select: { id: true, nome: true } },
   itens: {
@@ -19,6 +18,19 @@ const repertorioInclude = {
     },
   },
 } as const
+
+const cultoComRepertorioInclude = (membroId: string) => ({
+  repertorio: {
+    include: {
+      cantor: { select: { nome: true } },
+      itens: { select: { id: true } },
+    },
+  },
+  inscricoes: {
+    where: { membroId },
+    select: { instrumento: true },
+  },
+}) as const
 
 export class RepertorioRepository {
   async findByCulto(cultoId: string) {
@@ -39,7 +51,6 @@ export class RepertorioRepository {
     return prisma.repertorio.delete({ where: { cultoId } })
   }
 
-  // Itens
   async findItem(itemId: string) {
     return prisma.itemRepertorio.findUnique({
       where: { id: itemId },
@@ -84,27 +95,30 @@ export class RepertorioRepository {
     return prisma.itemRepertorio.delete({ where: { id: itemId } })
   }
 
-  // Para a listagem /repertorio — cultos em que o membro está escalado
+  // Próximos cultos + últimos 7 dias em que o membro está escalado
   async listarCultosComRepertorio(igrejaId: string, membroId: string) {
     return prisma.culto.findMany({
       where: {
         igrejaId,
-        dataHoraInicio: { gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) }, // últimos 7 dias + futuros
+        dataHoraInicio: { gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) },
         inscricoes: { some: { membroId } },
       },
       orderBy: { dataHoraInicio: "asc" },
-      include: {
-        repertorio: {
-          include: {
-            cantor: { select: { nome: true } },
-            itens: { select: { id: true } },
-          },
-        },
-        inscricoes: {
-          where: { membroId },
-          select: { instrumento: true },
-        },
+      include: cultoComRepertorioInclude(membroId),
+    })
+  }
+
+  // Cultos realizados há mais de 7 dias em que o membro participou
+  async listarHistorico(igrejaId: string, membroId: string) {
+    return prisma.culto.findMany({
+      where: {
+        igrejaId,
+        status: "REALIZADO",
+        dataHoraInicio: { lt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) },
+        inscricoes: { some: { membroId } },
       },
+      orderBy: { dataHoraInicio: "desc" }, // mais recente primeiro
+      include: cultoComRepertorioInclude(membroId),
     })
   }
 }

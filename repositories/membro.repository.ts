@@ -10,6 +10,44 @@ export class MembroRepository {
     })
   }
 
+  async findByIdComHistorico(id: string, igrejaId: string) {
+    return prisma.membro.findFirst({
+      where: { id, igrejaId },
+      include: {
+        // Últimos 20 cultos em que participou
+        inscricoes: {
+          orderBy: { culto: { dataHoraInicio: "desc" } },
+          take: 20,
+          include: {
+            culto: {
+              select: {
+                id: true,
+                tipo: true,
+                subtipo: true,
+                dataHoraInicio: true,
+                status: true,
+              },
+            },
+          },
+        },
+        // Músicas vinculadas (apenas se for cantor)
+        tomsCantor: {
+          include: {
+            musica: {
+              select: {
+                id: true,
+                titulo: true,
+                artista: true,
+                status: true,
+              },
+            },
+          },
+          orderBy: { musica: { titulo: "asc" } },
+        },
+      },
+    })
+  }
+
   async findByEmail(email: string, igrejaId: string) {
     return prisma.membro.findUnique({
       where: { email_igrejaId: { email, igrejaId } },

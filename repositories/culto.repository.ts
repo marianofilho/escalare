@@ -73,9 +73,15 @@ export class CultoRepository {
     })
   }
 
-  async inscrever(cultoId: string, membroId: string, instrumento: string, fazBacking: boolean) {
+  async inscrever(
+    cultoId: string,
+    membroId: string,
+    instrumento: string,
+    fazBacking: boolean,
+    comoInstrumentista: boolean
+  ) {
     return prisma.inscricaoCulto.create({
-      data: { cultoId, membroId, instrumento, fazBacking },
+      data: { cultoId, membroId, instrumento, fazBacking, comoInstrumentista },
       include: { membro: { select: { id: true, nome: true, fotoPerfil: true } } },
     })
   }

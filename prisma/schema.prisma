@@ -41,11 +41,17 @@ enum StatusMusica {
   ARQUIVADA
 }
 
+enum StatusSolicitacao {
+  PENDENTE
+  APROVADA
+  RECUSADA
+}
+
 model Igreja {
   id           String   @id @default(cuid())
   nome         String
   descricao    String?
-  slug         String   @unique  // ← adicionar esta linha
+  slug         String   @unique
   cidade       String?
   estado       String?
   telefone     String?
@@ -63,7 +69,7 @@ model Igreja {
 model Membro {
   id                    String       @id @default(cuid())
   igrejaId              String
-  supabaseId            String?      @unique  // ← adicionar
+  supabaseId            String?      @unique
   nome                  String
   email                 String
   telefone              String?
@@ -77,10 +83,11 @@ model Membro {
   criadoEm              DateTime     @default(now())
   atualizadoEm          DateTime     @updatedAt
 
-  igreja              Igreja           @relation(fields: [igrejaId], references: [id])
+  igreja              Igreja               @relation(fields: [igrejaId], references: [id])
   inscricoes          InscricaoCulto[]
   repertoriosCriados  Repertorio[]
   tomsCantor          MusicaCantor[]
+  solicitacoes        SolicitacaoVinculo[]
 
   @@unique([email, igrejaId])
 }
@@ -119,13 +126,14 @@ model LimiteInstrumento {
 }
 
 model InscricaoCulto {
-  id          String   @id @default(cuid())
-  membroId    String
-  cultoId     String
-  instrumento String
-  fazBacking  Boolean  @default(false)
-  ausente     Boolean  @default(false)
-  criadoEm    DateTime @default(now())
+  id               String   @id @default(cuid())
+  membroId         String
+  cultoId          String
+  instrumento      String
+  fazBacking       Boolean  @default(false)
+  ausente          Boolean  @default(false)
+  comoInstrumentista Boolean @default(false) // cantor participando só como músico
+  criadoEm         DateTime @default(now())
 
   membro      Membro   @relation(fields: [membroId], references: [id])
   culto       Culto    @relation(fields: [cultoId], references: [id], onDelete: Cascade)
@@ -146,9 +154,10 @@ model Musica {
   criadoEm      DateTime     @default(now())
   atualizadoEm  DateTime     @updatedAt
 
-  igreja         Igreja           @relation(fields: [igrejaId], references: [id])
+  igreja         Igreja               @relation(fields: [igrejaId], references: [id])
   cantores       MusicaCantor[]
   itemRepertorio ItemRepertorio[]
+  solicitacoes   SolicitacaoVinculo[]
 }
 
 model MusicaCantor {
@@ -167,8 +176,8 @@ model MusicaCantor {
 model MusicaFaixa {
   id             String @id @default(cuid())
   musicaCantorId String
-  instrumento    String // "Guitarra Ritmo", "Bateria", "Teclado 1", "Playback"...
-  linkAudio      String // Google Drive
+  instrumento    String
+  linkAudio      String
 
   musicaCantor MusicaCantor @relation(fields: [musicaCantorId], references: [id], onDelete: Cascade)
 }
@@ -189,12 +198,28 @@ model ItemRepertorio {
   id           String  @id @default(cuid())
   repertorioId String
   musicaId     String
-  ordem        Int?    // opcional — quem cadastra pode informar
-  tomUsado     String  // preenchido automaticamente do MusicaCantor
+  ordem        Int?
+  tomUsado     String
   observacoes  String?
 
   repertorio Repertorio @relation(fields: [repertorioId], references: [id], onDelete: Cascade)
   musica     Musica     @relation(fields: [musicaId], references: [id])
 
   @@unique([repertorioId, musicaId])
+}
+
+model SolicitacaoVinculo {
+  id           String            @id @default(cuid())
+  igrejaId     String
+  musicaId     String
+  cantorId     String
+  tomSugerido  String?
+  status       StatusSolicitacao @default(PENDENTE)
+  criadoEm     DateTime          @default(now())
+  atualizadoEm DateTime          @updatedAt
+
+  musica  Musica  @relation(fields: [musicaId], references: [id], onDelete: Cascade)
+  cantor  Membro  @relation(fields: [cantorId], references: [id], onDelete: Cascade)
+
+  @@unique([musicaId, cantorId])
 }

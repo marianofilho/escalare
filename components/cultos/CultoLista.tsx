@@ -15,9 +15,10 @@ const STATUS_LABEL: Record<string, { label: string; className: string }> = {
 interface CultoListaProps {
   isAdmin: boolean
   membroId: string
+  isCantor?: boolean
 }
 
-export default function CultoLista({ isAdmin, membroId }: CultoListaProps) {
+export default function CultoLista({ isAdmin, membroId, isCantor = false }: CultoListaProps) {
   const [cultos, setCultos] = useState<CultoResponseDto[]>([])
   const [loading, setLoading] = useState(true)
   const [filtroStatus, setFiltroStatus] = useState("")
@@ -37,7 +38,6 @@ export default function CultoLista({ isAdmin, membroId }: CultoListaProps) {
 
   return (
     <div className="space-y-4">
-      {/* Filtros */}
       <div className="flex flex-wrap gap-3 items-center">
         <select
           value={filtroStatus}
@@ -56,7 +56,7 @@ export default function CultoLista({ isAdmin, membroId }: CultoListaProps) {
             onChange={(e) => setApenasProximos(e.target.checked)}
             className="rounded border-zinc-300 text-violet-600 focus:ring-violet-500"
           />
-          Apenas próximos
+          Apenas proximos
         </label>
       </div>
 
@@ -80,6 +80,7 @@ export default function CultoLista({ isAdmin, membroId }: CultoListaProps) {
               key={c.id}
               culto={c}
               isAdmin={isAdmin}
+              isCantor={isCantor}
               membroId={membroId}
               onAtualizar={buscar}
             />
@@ -93,22 +94,24 @@ export default function CultoLista({ isAdmin, membroId }: CultoListaProps) {
 function CultoCard({
   culto,
   isAdmin,
+  isCantor,
   membroId,
   onAtualizar,
 }: {
   culto: CultoResponseDto
   isAdmin: boolean
+  isCantor: boolean
   membroId: string
   onAtualizar: () => void
 }) {
   const [inscrevendo, setInscrevendo] = useState(false)
   const [instrumento, setInstrumento] = useState("")
   const [fazBacking, setFazBacking] = useState(false)
+  const [comoInstrumentista, setComoInstrumentista] = useState(false)
   const [erro, setErro] = useState<string | null>(null)
   const [mostrarInscricao, setMostrarInscricao] = useState(false)
 
   const statusInfo = STATUS_LABEL[culto.status] ?? { label: culto.status, className: "bg-zinc-100 text-zinc-500" }
-
   const jaInscrito = culto.inscricoes.some((i) => i.membroId === membroId)
   const minhaInscricao = culto.inscricoes.find((i) => i.membroId === membroId)
 
@@ -119,7 +122,7 @@ function CultoCard({
     const res = await fetch(`/api/cultos/${culto.id}/inscricoes`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ instrumento, fazBacking }),
+      body: JSON.stringify({ instrumento, fazBacking, comoInstrumentista }),
     })
     const data = await res.json()
     if (!res.ok) { setErro(data.error); setInscrevendo(false); return }
@@ -129,7 +132,7 @@ function CultoCard({
   }
 
   async function handleCancelar() {
-    if (!confirm("Cancelar inscrição?")) return
+    if (!confirm("Cancelar inscricao?")) return
     await fetch(`/api/cultos/${culto.id}/inscricoes`, { method: "DELETE" })
     onAtualizar()
   }
@@ -140,7 +143,6 @@ function CultoCard({
         <div className="flex items-start gap-3 min-w-0">
           <div className="w-10 h-10 rounded-lg bg-violet-100 flex items-center justify-center text-lg shrink-0">🎤</div>
           <div className="min-w-0">
-            {/* Título clicável leva ao detalhe */}
             <Link href={`/cultos/${culto.id}`} className="group flex items-center gap-2 flex-wrap">
               <p className="text-sm font-semibold text-zinc-800 group-hover:text-violet-700 transition-colors">
                 {formatarTipoCulto(culto.tipo)}
@@ -168,6 +170,7 @@ function CultoCard({
               <div className="flex items-center gap-2">
                 <span className="text-xs bg-emerald-50 border border-emerald-200 text-emerald-700 px-2.5 py-1 rounded-full">
                   ✓ {minhaInscricao?.instrumento}
+                  {minhaInscricao?.comoInstrumentista && " (inst.)"}
                 </span>
                 <button
                   onClick={handleCancelar}
@@ -185,11 +188,9 @@ function CultoCard({
               </button>
             )
           )}
-          {/* Ver detalhe — sempre visível */}
           <Link
             href={`/cultos/${culto.id}`}
             className="text-xs text-zinc-400 hover:text-violet-600 transition-colors"
-            title="Ver detalhes"
           >
             Ver →
           </Link>
@@ -204,7 +205,7 @@ function CultoCard({
         </div>
       </div>
 
-      {/* Painel de inscrição inline */}
+      {/* Painel de inscricao inline */}
       {mostrarInscricao && !jaInscrito && (
         <div className="border-t border-zinc-100 bg-zinc-50 px-4 py-3 space-y-3">
           {erro && <p className="text-xs text-red-600">{erro}</p>}
@@ -215,7 +216,7 @@ function CultoCard({
               className="rounded-lg border border-zinc-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
             >
               <option value="">Selecionar instrumento...</option>
-              {["Violão", "Guitarra", "Baixo", "Bateria", "Teclado", "Piano", "Voz", "Outro"].map((i) => (
+              {["Violao", "Guitarra", "Baixo", "Bateria", "Teclado", "Piano", "Voz", "Outro"].map((i) => (
                 <option key={i} value={i}>{i}</option>
               ))}
             </select>
@@ -228,12 +229,26 @@ function CultoCard({
               />
               Backing vocal
             </label>
+            {/* Checkbox apenas para cantores */}
+            {isCantor && (
+              <label className="flex items-center gap-2 text-xs text-amber-700 cursor-pointer bg-amber-50 border border-amber-100 px-2.5 py-1.5 rounded-lg">
+                <input
+                  type="checkbox"
+                  checked={comoInstrumentista}
+                  onChange={(e) => setComoInstrumentista(e.target.checked)}
+                  className="rounded border-amber-300 text-amber-600"
+                />
+                Participar so como instrumentista
+              </label>
+            )}
+          </div>
+          <div className="flex items-center gap-2">
             <button
               onClick={handleInscrever}
               disabled={inscrevendo}
               className="px-4 py-1.5 text-xs font-medium bg-violet-600 text-white rounded-lg hover:bg-violet-700 disabled:opacity-50 transition-colors"
             >
-              {inscrevendo ? "Inscrevendo..." : "Confirmar inscrição"}
+              {inscrevendo ? "Inscrevendo..." : "Confirmar inscricao"}
             </button>
             <button
               onClick={() => setMostrarInscricao(false)}
@@ -263,15 +278,15 @@ function CultoCard({
               <span className="text-xs text-zinc-600">{i.membroNome.split(" ")[0]}</span>
               <span className="text-xs text-zinc-400">· {i.instrumento}</span>
               {i.fazBacking && <span className="text-xs text-emerald-500">BV</span>}
+              {i.comoInstrumentista && <span className="text-xs text-amber-500">inst.</span>}
             </div>
           ))}
-          {/* Link para ver ausências (admin, cultos realizados) */}
           {isAdmin && culto.status === "REALIZADO" && (
             <Link
               href={`/cultos/${culto.id}`}
               className="text-xs text-amber-600 hover:underline ml-auto self-center"
             >
-              Marcar ausências →
+              Marcar ausencias →
             </Link>
           )}
         </div>

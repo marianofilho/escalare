@@ -20,13 +20,23 @@ export function useAuth() {
     setError(null)
     try {
       const supabase = createSupabaseClient()
-      const { error: authError } = await supabase.auth.signInWithPassword({
+      const { data, error: authError } = await supabase.auth.signInWithPassword({
         email,
         password: senha,
       })
 
       if (authError) {
         setError("E-mail ou senha inválidos")
+        return
+      }
+
+      // Verifica se precisa trocar senha antes de navegar
+      // O middleware também faz essa verificação, mas fazer aqui
+      // garante o redirecionamento imediato sem depender do proxy
+      const precisaTrocar = data.user?.user_metadata?.precisaTrocarSenha
+      if (precisaTrocar) {
+        router.push("/trocar-senha")
+        router.refresh()
         return
       }
 

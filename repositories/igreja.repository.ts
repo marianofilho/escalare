@@ -1,12 +1,18 @@
+// src/repositories/igreja.repository.ts
 import { prisma } from "@/lib/prisma"
-import type { Igreja } from "@prisma/client"
 
 export class IgrejaRepository {
-  async findBySlug(slug: string): Promise<Igreja | null> {
-    return prisma.igreja.findUnique({ where: { slug } })
+  async findById(id: string) {
+    return prisma.igreja.findUnique({
+      where: { id },
+    })
   }
 
-  async criar(data: { nome: string; slug: string }): Promise<Igreja> {
-    return prisma.igreja.create({ data })
+  async findNome(id: string): Promise<string | null> {
+    const igreja = await prisma.igreja.findUnique({
+      where: { id },
+      select: { nome: true },
+    })
+    return igreja?.nome ?? null
   }
 }

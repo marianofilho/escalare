@@ -1,8 +1,8 @@
 // src/services/culto.service.ts
 import type { CultoRepository } from "@/repositories/culto.repository"
 import type { CriarCultoDto, AtualizarCultoDto, InscricaoCultoDto } from "@/dtos/culto/criar-culto.dto"
+import { NaoEncontradoError } from "@/types/errors"
 import {
-  NaoEncontradoError,
   CultoFechadoError,
   InstrumentoLotadoError,
   MembroJaInscritoError,
@@ -43,7 +43,6 @@ export class CultoService {
     const jaInscrito = await this.cultoRepository.findInscricao(cultoId, membroId)
     if (jaInscrito) throw new MembroJaInscritoError()
 
-    // Verifica limite de instrumento se houver regra definida
     const limiteInstrumento = culto.limites.find((l) => l.instrumento === dto.instrumento)
     if (limiteInstrumento) {
       const inscritos = await this.cultoRepository.contarInscritosPorInstrumento(
@@ -55,7 +54,13 @@ export class CultoService {
       }
     }
 
-    return this.cultoRepository.inscrever(cultoId, membroId, dto.instrumento, dto.fazBacking)
+    return this.cultoRepository.inscrever(
+      cultoId,
+      membroId,
+      dto.instrumento,
+      dto.fazBacking,
+      dto.comoInstrumentista ?? false
+    )
   }
 
   async cancelarInscricao(cultoId: string, igrejaId: string, membroId: string) {
@@ -65,7 +70,6 @@ export class CultoService {
     const inscricao = await this.cultoRepository.findInscricao(cultoId, membroId)
     if (!inscricao) throw new NaoEncontradoError("Inscrição", `${membroId}/${cultoId}`)
 
-    // Verifica prazo de cancelamento
     const agora = new Date()
     const inicioMs = culto.dataHoraInicio.getTime()
     const prazoMs = culto.prazoCancelamentoHoras * 60 * 60 * 1000

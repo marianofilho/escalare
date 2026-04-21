@@ -20,6 +20,7 @@ export interface InscricaoResponseDto {
   instrumento: string
   fazBacking: boolean
   ausente: boolean
+  comoInstrumentista: boolean
 }
 
 export class CultoResponseDto {
@@ -70,6 +71,7 @@ export class CultoResponseDto {
         instrumento: i.instrumento,
         fazBacking: i.fazBacking,
         ausente: i.ausente,
+        comoInstrumentista: i.comoInstrumentista,
       })),
       totalInscritos: culto.inscricoes.length,
       criadoEm: culto.criadoEm.toISOString(),

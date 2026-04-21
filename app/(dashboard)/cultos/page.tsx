@@ -1,20 +1,24 @@
 // src/app/(dashboard)/cultos/page.tsx
 import Link from "next/link"
-import { getServerSession } from "@/lib/supabase-server"
+import { createSupabaseServerClient } from "@/lib/supabase-server"
 import { redirect } from "next/navigation"
 import { makeMembroService } from "@/lib/factories"
 import CultoLista from "@/components/cultos/CultoLista"
 
+export const dynamic = "force-dynamic"
+
 export default async function CultosPage() {
-  const user = await getServerSession()
-  if (!user) redirect("/login")
+  const supabase = await createSupabaseServerClient()
+  const { data: { session } } = await supabase.auth.getSession()
+  if (!session) redirect("/login")
 
-  const igrejaId = user.user_metadata?.igrejaId as string
-  const membroId = user.user_metadata?.membroId as string
+  const igrejaId = session.user.user_metadata?.igrejaId as string
+  const membroId = session.user.user_metadata?.membroId as string
 
-  const service = makeMembroService()
-  const membroAtual = await service.buscarPorId(membroId, igrejaId)
-  const isAdmin = membroAtual.perfil === "ADMINISTRADOR"
+  // Busca perfil no banco — fonte de verdade
+  const membro = await makeMembroService().buscarPorId(membroId, igrejaId)
+  const isAdmin = membro.perfil === "ADMINISTRADOR"
+  const isCantor = membro.perfil === "CANTOR"
 
   return (
     <div className="min-h-screen bg-zinc-50">
@@ -22,7 +26,7 @@ export default async function CultosPage() {
         <div className="flex items-center justify-between mb-8">
           <div>
             <h1 className="text-2xl font-bold text-zinc-900">Cultos</h1>
-            <p className="text-sm text-zinc-400 mt-0.5">Escalas e inscrições do ministério</p>
+            <p className="text-sm text-zinc-400 mt-0.5">Escalas e inscricoes do ministerio</p>
           </div>
           {isAdmin && (
             <Link
@@ -33,7 +37,7 @@ export default async function CultosPage() {
             </Link>
           )}
         </div>
-        <CultoLista isAdmin={isAdmin} membroId={membroId} />
+        <CultoLista isAdmin={isAdmin} isCantor={isCantor} membroId={membroId} />
       </div>
     </div>
   )

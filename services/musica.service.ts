@@ -30,13 +30,18 @@ export class MusicaService {
 
   // --- Musica ---
 
-  async listar(igrejaId: string, filtros?: { status?: string; busca?: string }) {
+  // Todos os perfis veem o catálogo completo.
+  // O filtro por cantorId é opcional e só usado quando explicitamente solicitado.
+  async listar(
+    igrejaId: string,
+    filtros?: { status?: string; busca?: string; cantorId?: string }
+  ) {
     return this.musicaRepository.listarPorIgreja(igrejaId, filtros)
   }
 
   async buscarPorId(id: string, igrejaId: string) {
     const musica = await this.musicaRepository.findById(id, igrejaId)
-    if (!musica) throw new NaoEncontradoError("Música", id)
+    if (!musica) throw new NaoEncontradoError("Musica", id)
     return musica
   }
 
@@ -50,7 +55,7 @@ export class MusicaService {
   async atualizar(id: string, igrejaId: string, dto: AtualizarMusicaDto, membroId: string) {
     await this.exigirAdmin(membroId, igrejaId)
     const musica = await this.musicaRepository.findById(id, igrejaId)
-    if (!musica) throw new NaoEncontradoError("Música", id)
+    if (!musica) throw new NaoEncontradoError("Musica", id)
     if (dto.titulo && dto.titulo !== musica.titulo) {
       const existente = await this.musicaRepository.findByTitulo(dto.titulo, igrejaId)
       if (existente) throw new MusicaJaExisteError(dto.titulo)
@@ -61,14 +66,14 @@ export class MusicaService {
   async arquivar(id: string, igrejaId: string, membroId: string) {
     await this.exigirAdmin(membroId, igrejaId)
     const musica = await this.musicaRepository.findById(id, igrejaId)
-    if (!musica) throw new NaoEncontradoError("Música", id)
+    if (!musica) throw new NaoEncontradoError("Musica", id)
     return this.musicaRepository.arquivar(id)
   }
 
   async restaurar(id: string, igrejaId: string, membroId: string) {
     await this.exigirAdmin(membroId, igrejaId)
     const musica = await this.musicaRepository.findById(id, igrejaId)
-    if (!musica) throw new NaoEncontradoError("Música", id)
+    if (!musica) throw new NaoEncontradoError("Musica", id)
     return this.musicaRepository.restaurar(id)
   }
 
@@ -77,7 +82,7 @@ export class MusicaService {
   async vincularCantor(musicaId: string, igrejaId: string, membroId: string, dto: VincularCantorDto) {
     await this.exigirAdmin(membroId, igrejaId)
     const musica = await this.musicaRepository.findById(musicaId, igrejaId)
-    if (!musica) throw new NaoEncontradoError("Música", musicaId)
+    if (!musica) throw new NaoEncontradoError("Musica", musicaId)
     const cantor = await this.membroRepository.findById(dto.cantorId, igrejaId)
     if (!cantor) throw new NaoEncontradoError("Membro", dto.cantorId)
     if (cantor.perfil !== "CANTOR") throw new PerfilInvalidoParaCantorError()
@@ -95,7 +100,7 @@ export class MusicaService {
   ) {
     await this.exigirAdmin(membroId, igrejaId)
     const musica = await this.musicaRepository.findById(musicaId, igrejaId)
-    if (!musica) throw new NaoEncontradoError("Música", musicaId)
+    if (!musica) throw new NaoEncontradoError("Musica", musicaId)
     const vinculo = await this.musicaRepository.findVinculo(musicaId, cantorId)
     if (!vinculo) throw new CantorNaoVinculadoError()
     return this.musicaRepository.atualizarVinculo(musicaId, cantorId, dto)
@@ -104,7 +109,7 @@ export class MusicaService {
   async removerVinculo(musicaId: string, igrejaId: string, cantorId: string, membroId: string) {
     await this.exigirAdmin(membroId, igrejaId)
     const musica = await this.musicaRepository.findById(musicaId, igrejaId)
-    if (!musica) throw new NaoEncontradoError("Música", musicaId)
+    if (!musica) throw new NaoEncontradoError("Musica", musicaId)
     const vinculo = await this.musicaRepository.findVinculo(musicaId, cantorId)
     if (!vinculo) throw new CantorNaoVinculadoError()
     return this.musicaRepository.removerVinculo(musicaId, cantorId)

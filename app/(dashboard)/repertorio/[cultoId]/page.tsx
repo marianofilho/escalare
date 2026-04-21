@@ -1,15 +1,15 @@
 // src/app/(dashboard)/repertorio/[cultoId]/page.tsx
 import { createSupabaseServerClient } from "@/lib/supabase-server"
 import { redirect, notFound } from "next/navigation"
-import { makeRepertorioService, makeCultoService, makeMusicaService } from "@/lib/factories"
-import { authService } from "@/services/auth.service"
+import { makeRepertorioService, makeCultoService, makeMusicaService, makeMembroService } from "@/lib/factories"
 import { RepertorioResponseDto } from "@/dtos/repertorio/repertorio-response.dto"
 import { MusicaResponseDto } from "@/dtos/musica/musica-response.dto"
 import { NaoEncontradoError } from "@/types/errors"
-import { prisma } from "@/lib/prisma"
 import RepertorioEditor from "@/components/repertorio/RepertorioEditor"
 import Link from "next/link"
 import { formatarTipoCulto, formatarDataHora } from "@/utils/culto"
+
+export const dynamic = "force-dynamic"
 
 interface Props {
   params: Promise<{ cultoId: string }>
@@ -25,33 +25,26 @@ export default async function RepertorioEditorPage({ params }: Props) {
   const igrejaId = session.user.user_metadata?.igrejaId as string
   const membroId = session.user.user_metadata?.membroId as string
 
-  let perfil = session.user.user_metadata?.perfil as string | undefined
-  if (!perfil) {
-    const usuario = await authService.me(session.user.id)
-    perfil = usuario.perfil
-  }
+  // Busca perfil no banco — fonte de verdade
+  const membro = await makeMembroService().buscarPorId(membroId, igrejaId)
+  const perfil = membro.perfil
   const isAdmin = perfil === "ADMINISTRADOR"
 
   try {
     const culto = await makeCultoService().buscarPorId(cultoId, igrejaId)
 
-    // Busca as inscrições com o perfil do membro para identificar o cantor
-    const inscricoesComPerfil = await prisma.inscricaoCulto.findMany({
-      where: { cultoId },
-      include: { membro: { select: { id: true, perfil: true } } },
-    })
-
-    // Cantor escalado = membro inscrito com perfil CANTOR
-    const inscricaoCantor = inscricoesComPerfil.find(
-      (i) => i.membro.perfil === "CANTOR"
+    // Usa as inscrições já carregadas no culto (sem prisma direto)
+    // Filtra cantores que NÃO marcaram comoInstrumentista
+    const inscricaoCantor = culto.inscricoes.find(
+      (i) => i.membro.perfil === "CANTOR" && !i.comoInstrumentista
     )
     const cantorIdDoRepertorio = inscricaoCantor?.membroId ?? null
 
-    // Permissão: admin ou o próprio cantor inscrito
-    const isCantorEscalado = perfil === "CANTOR" &&
-      inscricoesComPerfil.some((i) => i.membroId === membroId)
+    // Permissão: admin ou cantor inscrito (mesmo que como instrumentista, pode ver)
+    const isCantorInscrito = perfil === "CANTOR" &&
+      culto.inscricoes.some((i) => i.membroId === membroId)
 
-    if (!isAdmin && !isCantorEscalado) redirect("/repertorio")
+    if (!isAdmin && !isCantorInscrito) redirect("/repertorio")
 
     const repertorioRaw = await makeRepertorioService().buscarPorCulto(cultoId, igrejaId)
     const repertorio = repertorioRaw ? RepertorioResponseDto.from(repertorioRaw) : null
@@ -68,7 +61,7 @@ export default async function RepertorioEditorPage({ params }: Props) {
       <div className="max-w-3xl mx-auto px-6 py-10">
         <div className="mb-8">
           <Link href="/repertorio" className="text-sm text-zinc-400 hover:text-zinc-600 transition-colors">
-            ← Voltar
+            Voltar
           </Link>
           <h1 className="text-2xl font-bold text-zinc-900 mt-2">
             {formatarTipoCulto(culto.tipo)}
@@ -76,8 +69,9 @@ export default async function RepertorioEditorPage({ params }: Props) {
           <p className="text-sm text-zinc-400 mt-0.5">{formatarDataHora(culto.dataHoraInicio)}</p>
           {!cantorIdDoRepertorio && (
             <div className="mt-3 bg-amber-50 border border-amber-200 text-amber-700 rounded-lg px-4 py-2 text-sm">
-              Nenhum cantor inscrito neste culto. Um membro com perfil{" "}
-              <strong>Cantor</strong> precisa se inscrever antes de criar o repertório.
+              Nenhum cantor inscrito para cantar neste culto. Um membro com perfil{" "}
+              <strong>Cantor</strong> precisa se inscrever (sem marcar "participar so como instrumentista")
+              antes de criar o repertorio.
             </div>
           )}
         </div>

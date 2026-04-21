@@ -4,6 +4,9 @@ import { getServerSession } from "@/lib/supabase-server"
 import { CriarCultoSchema } from "@/dtos/culto/criar-culto.dto"
 import { CultoResponseDto } from "@/dtos/culto/culto-response.dto"
 import { makeCultoService, makeMembroService } from "@/lib/factories"
+import { makeEmailService } from "@/services/email.service"
+import { MembroRepository } from "@/repositories/membro.repository"
+import { IgrejaRepository } from "@/repositories/igreja.repository"
 import { handleApiError } from "@/lib/api-error-handler"
 
 export async function GET(request: Request): Promise<NextResponse> {
@@ -44,8 +47,52 @@ export async function POST(request: Request): Promise<NextResponse> {
     const dto = CriarCultoSchema.parse(body)
 
     const culto = await makeCultoService().criar(dto, igrejaId)
-    return NextResponse.json(CultoResponseDto.from(culto), { status: 201 })
+    const cultoDto = CultoResponseDto.from(culto)
+
+    // Dispara notificações em background — não bloqueia a resposta
+    if (dto.inscricoesAbertas !== false) {
+      notificarMembros({
+        igrejaId,
+        cultoId: culto.id,
+        tipoCulto: culto.tipo,
+        subtipo: culto.subtipo,
+        dataHoraInicio: culto.dataHoraInicio.toISOString(),
+      }).catch((err) =>
+        console.error("[POST /api/cultos] Erro ao notificar membros:", err)
+      )
+    }
+
+    return NextResponse.json(cultoDto, { status: 201 })
   } catch (error) {
     return handleApiError(error)
   }
+}
+
+async function notificarMembros(params: {
+  igrejaId: string
+  cultoId: string
+  tipoCulto: string
+  subtipo: string | null
+  dataHoraInicio: string
+}): Promise<void> {
+  const membroRepo = new MembroRepository()
+  const igrejaRepo = new IgrejaRepository()
+
+  const [membros, nomeIgreja] = await Promise.all([
+    membroRepo.listarPorIgreja(params.igrejaId, { status: "ATIVO" }),
+    igrejaRepo.findNome(params.igrejaId),
+  ])
+
+  if (membros.length === 0 || !nomeIgreja) return
+
+  const { enviados, erros } = await makeEmailService().notificarEscala({
+    membros: membros.map((m) => ({ nome: m.nome, email: m.email })),
+    nomeIgreja,
+    tipoCulto: params.tipoCulto,
+    subtipo: params.subtipo,
+    dataHoraInicio: params.dataHoraInicio,
+    cultoId: params.cultoId,
+  })
+
+  console.log(`[POST /api/cultos] Notificacoes: ${enviados} enviadas, ${erros} erros`)
 }

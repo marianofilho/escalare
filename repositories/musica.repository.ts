@@ -21,8 +21,6 @@ const cantoresInclude = {
 } as const
 
 export class MusicaRepository {
-  // --- Musica ---
-
   async findById(id: string, igrejaId: string) {
     return prisma.musica.findFirst({
       where: { id, igrejaId },
@@ -36,7 +34,10 @@ export class MusicaRepository {
     })
   }
 
-  async listarPorIgreja(igrejaId: string, filtros?: { status?: string; busca?: string }) {
+  async listarPorIgreja(
+    igrejaId: string,
+    filtros?: { status?: string; busca?: string; cantorId?: string }
+  ) {
     return prisma.musica.findMany({
       where: {
         igrejaId,
@@ -48,6 +49,10 @@ export class MusicaRepository {
                 { artista: { contains: filtros.busca, mode: "insensitive" } },
               ],
             }
+          : {}),
+        // Cantor vê apenas músicas onde está vinculado
+        ...(filtros?.cantorId
+          ? { cantores: { some: { cantorId: filtros.cantorId } } }
           : {}),
       },
       orderBy: { titulo: "asc" },
@@ -102,8 +107,6 @@ export class MusicaRepository {
     })
   }
 
-  // --- MusicaCantor ---
-
   async findVinculo(musicaId: string, cantorId: string) {
     return prisma.musicaCantor.findUnique({
       where: { musicaId_cantorId: { musicaId, cantorId } },
@@ -137,8 +140,6 @@ export class MusicaRepository {
       where: { musicaId_cantorId: { musicaId, cantorId } },
     })
   }
-
-  // --- MusicaFaixa ---
 
   async findFaixa(faixaId: string) {
     return prisma.musicaFaixa.findUnique({

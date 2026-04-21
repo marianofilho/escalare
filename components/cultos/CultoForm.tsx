@@ -20,6 +20,12 @@ const TIPOS_CULTO = [
   { value: "OUTRO", label: "Outro" },
 ]
 
+const STATUS_CULTO = [
+  { value: "ABERTO", label: "Aberto", desc: "Inscrições disponíveis" },
+  { value: "FECHADO", label: "Fechado", desc: "Inscrições encerradas" },
+  { value: "REALIZADO", label: "Realizado", desc: "Culto já aconteceu" },
+]
+
 const INSTRUMENTOS_DISPONIVEIS = [
   "Violão", "Guitarra", "Baixo", "Bateria", "Teclado", "Piano",
   "Violino", "Percussão", "Flauta", "Voz",
@@ -41,6 +47,7 @@ export default function CultoForm({ culto }: CultoFormProps) {
     subtipo: culto?.subtipo ?? "",
     dataHoraInicio: toLocalDatetime(culto?.dataHoraInicio),
     dataHoraFim: toLocalDatetime(culto?.dataHoraFim),
+    status: culto?.status ?? "ABERTO",
     inscricoesAbertas: culto?.inscricoesAbertas ?? true,
     prazoCancelamentoHoras: culto?.prazoCancelamentoHoras ?? 48,
     repetirSemanal: culto?.repetirSemanal ?? false,
@@ -80,7 +87,7 @@ export default function CultoForm({ culto }: CultoFormProps) {
     setLoading(true)
     setErroGeral(null)
 
-    const payload: Partial<CriarCultoDto> = {
+    const payload: Partial<CriarCultoDto> & { status?: string } = {
       ...form,
       tipo: form.tipo as CriarCultoDto["tipo"],
       dataHoraInicio: new Date(form.dataHoraInicio).toISOString(),
@@ -171,6 +178,48 @@ export default function CultoForm({ culto }: CultoFormProps) {
           />
         </Campo>
       </Secao>
+
+      {/* Status — apenas na edição */}
+      {isEdicao && (
+        <Secao titulo="Status do culto">
+          <div className="grid grid-cols-3 gap-2">
+            {STATUS_CULTO.map((s) => (
+              <button
+                key={s.value}
+                type="button"
+                onClick={() => set("status", s.value)}
+                className={`flex flex-col items-start px-4 py-3 rounded-xl border text-left transition-all ${
+                  form.status === s.value
+                    ? s.value === "ABERTO"
+                      ? "border-emerald-400 bg-emerald-50"
+                      : s.value === "FECHADO"
+                      ? "border-amber-400 bg-amber-50"
+                      : "border-zinc-400 bg-zinc-50"
+                    : "border-zinc-200 hover:border-zinc-300"
+                }`}
+              >
+                <span className={`text-sm font-medium ${
+                  form.status === s.value
+                    ? s.value === "ABERTO"
+                      ? "text-emerald-700"
+                      : s.value === "FECHADO"
+                      ? "text-amber-700"
+                      : "text-zinc-600"
+                    : "text-zinc-600"
+                }`}>
+                  {s.label}
+                </span>
+                <span className="text-xs text-zinc-400 mt-0.5">{s.desc}</span>
+              </button>
+            ))}
+          </div>
+          {form.status === "REALIZADO" && (
+            <p className="text-xs text-zinc-400 bg-zinc-50 border border-zinc-100 rounded-lg px-3 py-2">
+              💡 Marcar como Realizado move este culto para o histórico de repertórios dos membros escalados.
+            </p>
+          )}
+        </Secao>
+      )}
 
       {/* Configurações de inscrição */}
       <Secao titulo="Inscrições">
