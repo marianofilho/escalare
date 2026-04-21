@@ -9,6 +9,12 @@ import type {
   CriarFaixaDto,
   AtualizarFaixaDto,
 } from "@/dtos/musica/criar-musica.dto"
+import {
+  ITENS_POR_PAGINA,
+  calcularSkip,
+  montarPaginacao,
+  type PaginacaoDto,
+} from "@/dtos/paginacao.dto"
 
 const cantoresInclude = {
   cantores: {
@@ -19,6 +25,10 @@ const cantoresInclude = {
     orderBy: { cantor: { nome: "asc" as const } },
   },
 } as const
+
+type MusicaComCantores = Awaited<ReturnType<typeof prisma.musica.findFirst>> & {
+  cantores: any[]
+}
 
 export class MusicaRepository {
   async findById(id: string, igrejaId: string) {
@@ -34,30 +44,60 @@ export class MusicaRepository {
     })
   }
 
+  // Sem paginação — para uso interno (repertório, emails, etc.)
   async listarPorIgreja(
     igrejaId: string,
     filtros?: { status?: string; busca?: string; cantorId?: string }
   ) {
     return prisma.musica.findMany({
-      where: {
-        igrejaId,
-        ...(filtros?.status ? { status: filtros.status as "ATIVA" | "ARQUIVADA" } : {}),
-        ...(filtros?.busca
-          ? {
-              OR: [
-                { titulo: { contains: filtros.busca, mode: "insensitive" } },
-                { artista: { contains: filtros.busca, mode: "insensitive" } },
-              ],
-            }
-          : {}),
-        // Cantor vê apenas músicas onde está vinculado
-        ...(filtros?.cantorId
-          ? { cantores: { some: { cantorId: filtros.cantorId } } }
-          : {}),
-      },
+      where: this._where(igrejaId, filtros),
       orderBy: { titulo: "asc" },
       include: cantoresInclude,
     })
+  }
+
+  // Com paginação — para a API REST
+  async listarPaginado(
+    igrejaId: string,
+    filtros?: { status?: string; busca?: string; cantorId?: string },
+    pagina = 1
+  ): Promise<PaginacaoDto<NonNullable<MusicaComCantores>>> {
+    const where = this._where(igrejaId, filtros)
+    const porPagina = ITENS_POR_PAGINA
+
+    const [data, total] = await prisma.$transaction([
+      prisma.musica.findMany({
+        where,
+        orderBy: { titulo: "asc" },
+        skip: calcularSkip(pagina, porPagina),
+        take: porPagina,
+        include: cantoresInclude,
+      }),
+      prisma.musica.count({ where }),
+    ])
+
+    return montarPaginacao(data, total, pagina, porPagina)
+  }
+
+  private _where(
+    igrejaId: string,
+    filtros?: { status?: string; busca?: string; cantorId?: string }
+  ) {
+    return {
+      igrejaId,
+      ...(filtros?.status ? { status: filtros.status as "ATIVA" | "ARQUIVADA" } : {}),
+      ...(filtros?.busca
+        ? {
+            OR: [
+              { titulo: { contains: filtros.busca, mode: "insensitive" as const } },
+              { artista: { contains: filtros.busca, mode: "insensitive" as const } },
+            ],
+          }
+        : {}),
+      ...(filtros?.cantorId
+        ? { cantores: { some: { cantorId: filtros.cantorId } } }
+        : {}),
+    }
   }
 
   async criar(data: CriarMusicaDto & { igrejaId: string }) {

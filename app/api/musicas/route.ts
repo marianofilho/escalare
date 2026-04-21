@@ -1,9 +1,10 @@
-// src/app/api/musicas/route.ts
+// src/app/api/musicas/route.ts — GET atualizado com paginação
 import { NextResponse } from "next/server"
 import { createSupabaseServerClient } from "@/lib/supabase-server"
 import { CriarMusicaSchema } from "@/dtos/musica/criar-musica.dto"
 import { MusicaResponseDto } from "@/dtos/musica/musica-response.dto"
 import { makeMusicaService } from "@/lib/factories"
+import { MusicaRepository } from "@/repositories/musica.repository"
 import { handleApiError } from "@/lib/api-error-handler"
 
 export async function GET(request: Request): Promise<NextResponse> {
@@ -16,8 +17,21 @@ export async function GET(request: Request): Promise<NextResponse> {
     const { searchParams } = new URL(request.url)
     const status = searchParams.get("status") ?? undefined
     const busca = searchParams.get("busca") ?? undefined
+    const paginaParam = searchParams.get("pagina")
 
-    // Todos os perfis veem o catálogo completo
+    const repo = new MusicaRepository()
+
+    // Com paginação
+    if (paginaParam) {
+      const pagina = Math.max(1, parseInt(paginaParam, 10) || 1)
+      const resultado = await repo.listarPaginado(igrejaId, { status, busca }, pagina)
+      return NextResponse.json({
+        ...resultado,
+        data: resultado.data.map(MusicaResponseDto.from),
+      })
+    }
+
+    // Sem paginação — compatibilidade retroativa
     const musicas = await makeMusicaService().listar(igrejaId, { status, busca })
     return NextResponse.json(musicas.map(MusicaResponseDto.from))
   } catch (error) {
