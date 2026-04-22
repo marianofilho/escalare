@@ -6,9 +6,16 @@ O **Escalare** é uma solução Full Stack moderna desenvolvida para organizar o
 
 ## 🚀 Funcionalidades
 
-- **Gestão de Escalas:** Controle visual de voluntários (músicos e técnicos) por data e função.
-- **Acervo de Músicas:** Repositório centralizado integrado ao banco de dados para acesso rápido a cifras e tons.
-- **Setlists Dinâmicos:** Planejamento de repertório com dados em tempo real.
+## 1. Contexto do Projeto
+
+Sistema web de gestão de ministério de louvor de uma igreja. Funcionalidades principais:
+
+- Cadastro de membros (músicos, cantores, backing vocal)
+- Escala mensal de cultos com inscrição automática
+- Catálogo de músicas com áudios e playbacks por cantor/tom (links Google Drive)
+- Repertório do culto montado pelo cantor
+- Player de material de estudo
+
 - **Testes de Confiabilidade:** Garantia de funcionamento via testes unitários e de integração.
 
 ## 🛠️ Stack Tecnológica
