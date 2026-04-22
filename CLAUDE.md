@@ -352,13 +352,13 @@ export async function GET(request: Request) {
 ### Alta prioridade
 - [x] **Dashboard com dados reais** — validar se `DashboardClient` está consumindo dados reais do banco (`totalMembros`, `totalMusicas`, `proximosCultos`) ou valores hardcoded
 - [x] **Tela de culto individual** (`/cultos/[id]`) — view detalhada com inscritos, link para repertório e status do culto; o `CultoLista` já linka para `/cultos/[id]/editar` mas a view de leitura não existe
-- [ ] **Testes** Criar testes para cada funcionalidade, fazer uma boa cobertura de testes no sistema;
+- [x] **Testes** Criar testes para cada funcionalidade, fazer uma boa cobertura de testes no sistema;
 
 ### Média prioridade
 - [x] **Marcação de ausência** — o schema tem `ausente` em `InscricaoCulto` e o `CultoService` tem `marcarAusente`, mas não há UI; admin marca quem faltou após o culto
 - [x] **Restaurar música arquivada** — adicionar ação "Restaurar" na listagem de músicas arquivadas (status `ARQUIVADA` → `ATIVA`)
 - [x] **Perfil do membro** (`/perfil`) — página onde o próprio membro atualiza nome, telefone, instrumento principal e foto de perfil
-- [ ] **Notificação de escala por email** — ao criar ou editar um culto, notificar membros por email que as inscrições estão abertas (Supabase já tem suporte a envio de emails)
+- [x] **Notificação de escala por email** — ao criar ou editar um culto, notificar membros por email que as inscrições estão abertas (Supabase já tem suporte a envio de emails)
 
 ### Baixa prioridade
 - [x] **`.env.example`** — criar arquivo com todas as variáveis necessárias documentadas (previsto no CLAUDE.md mas não gerado)
@@ -370,26 +370,24 @@ export async function GET(request: Request) {
 
 ### Alta prioridade
 
-- [ ] **Notificação de escala por email** — ao criar ou editar um culto, notificar membros por email que as inscrições estão abertas. O projeto já tem Resend configurado (`RESEND_FROM_EMAIL`). Supabase também tem suporte nativo a envio de emails via `supabase.auth.admin.sendRawEmail()`. Fluxo sugerido: `CultoService.criar()` → dispara email para todos os membros ativos da igreja com link direto para `/cultos/[id]`
+- [x] **Notificação de escala por email** — ao criar ou editar um culto, notificar membros por email que as inscrições estão abertas. O projeto já tem Resend configurado (`RESEND_FROM_EMAIL`). Supabase também tem suporte nativo a envio de emails via `supabase.auth.admin.sendRawEmail()`. Fluxo sugerido: `CultoService.criar()` → dispara email para todos os membros ativos da igreja com link direto para `/cultos/[id]`
 
-- [ ] **Testes** — criar testes para cada funcionalidade com boa cobertura. Stack sugerida: **Vitest** para unit tests (services e repositories) e **Playwright** para testes E2E das principais jornadas (inscrição em culto, solicitação de vínculo, montagem de repertório). Priorizar testes nos services pois concentram a lógica de negócio
+- [x] **Testes** — criar testes para cada funcionalidade com boa cobertura. Stack sugerida: **Vitest** para unit tests (services e repositories) e **Playwright** para testes E2E das principais jornadas (inscrição em culto, solicitação de vínculo, montagem de repertório). Priorizar testes nos services pois concentram a lógica de negócio
 
 ### Média prioridade
 
-- [ ] **Paginação** — músicas, membros e cultos carregam todos os registros de uma vez. Em ministérios maiores isso vai degradar a performance. Implementar paginação com cursor no repository (`findMany` com `cursor` e `take`) e componente `<Paginacao>` reutilizável nos listagens
+- [x] **Paginação** — músicas, membros e cultos carregam todos os registros de uma vez. Em ministérios maiores isso vai degradar a performance. Implementar paginação com cursor no repository (`findMany` com `cursor` e `take`) e componente `<Paginacao>` reutilizável nos listagens
 
-- [ ] **Busca global** — barra de busca no header que pesquisa simultaneamente em membros, músicas e cultos, retornando resultados agrupados por categoria. Pode ser implementada como `GET /api/busca?q=termo` com queries paralelas via `prisma.$transaction`
+- [x] **Busca global** — barra de busca no header que pesquisa simultaneamente em membros, músicas e cultos, retornando resultados agrupados por categoria. Pode ser implementada como `GET /api/busca?q=termo` com queries paralelas via `prisma.$transaction`
 
-- [ ] **Tela de membro individual** (`/membros/[id]`) — view de leitura com histórico de cultos em que participou, músicas vinculadas (se for cantor), instrumentos e dados de contato. Útil para o admin consultar rapidamente o histórico de um membro
+- [x] **Tela de membro individual** (`/membros/[id]`) — view de leitura com histórico de cultos em que participou, músicas vinculadas (se for cantor), instrumentos e dados de contato. Útil para o admin consultar rapidamente o histórico de um membro
 
 ### Baixa prioridade
 
-- [ ] **PWA (Progressive Web App)** — configurar o Next.js como PWA para que músicos possam instalar o app no celular e acessar o repertório offline durante o culto. Requer `next-pwa` e um `service-worker` que faça cache dos repertórios recentes
+- [x] **PWA (Progressive Web App)** — configurar o Next.js como PWA para que músicos possam instalar o app no celular e acessar o repertório offline durante o culto. Requer `next-pwa` e um `service-worker` que faça cache dos repertórios recentes
 
 - [ ] **Dark mode** — adicionar suporte a tema escuro via `prefers-color-scheme` e toggle manual. O Tailwind já suporta via classe `dark:`. Útil para uso do app em ambientes com pouca luz (palco, ensaio noturno)
 
-- [ ] **Exportar repertório em PDF** — cantor ou admin exporta o repertório de um culto como PDF para impressão ou compartilhamento offline. Pode usar `@react-pdf/renderer` ou geração via API com `puppeteer`
+- [x] **Exportar repertório em PDF** — cantor ou admin exporta o repertório de um culto como PDF para impressão ou compartilhamento offline. Pode usar `@react-pdf/renderer` ou geração via API com `puppeteer`
 
-- [ ] **Log de atividades** — registrar ações críticas (criação de culto, aprovação de vínculo, alteração de perfil) em uma tabela `LogAtividade` para auditoria pelo admin
-
-- [ ] **Recuperar senha** — registrar ações críticas (criação de culto, aprovação de vínculo, alteração de perfil) em uma tabela `LogAtividade` para auditoria pelo admin
+- [x] **Recuperar senha** — o admin pode resetar a senha e enviar via email. Quando o usuário logar no sistema, será redirecionado para o redefinir senha.
