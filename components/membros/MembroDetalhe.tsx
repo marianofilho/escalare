@@ -1,6 +1,7 @@
 "use client"
 // src/components/membros/MembroDetalhe.tsx
 
+import { useState } from "react"
 import Link from "next/link"
 import type { MembroPerfilResponseDto } from "@/dtos/membro/membro-perfil-response.dto"
 
@@ -26,20 +27,22 @@ const STATUS_COR: Record<string, string> = {
 
 function formatarData(iso: string): string {
   return new Date(iso).toLocaleDateString("pt-BR", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
+    day: "2-digit", month: "short", year: "numeric",
+    hour: "2-digit", minute: "2-digit",
   })
 }
 
 function formatarDataSimples(iso: string): string {
   return new Date(iso).toLocaleDateString("pt-BR", {
-    day: "2-digit",
-    month: "long",
-    year: "numeric",
+    day: "2-digit", month: "long", year: "numeric",
   })
+}
+
+interface SenhaCriada {
+  senhaTemporaria: string
+  email: string
+  nome: string
+  emailEnviado: boolean
 }
 
 interface MembroDetalheProps {
@@ -49,11 +52,40 @@ interface MembroDetalheProps {
 }
 
 export default function MembroDetalhe({ membro, isAdmin, isMinhaConta }: MembroDetalheProps) {
+  const [resetando, setResetando] = useState(false)
+  const [senhaCriada, setSenhaCriada] = useState<SenhaCriada | null>(null)
+  const [erroReset, setErroReset] = useState<string | null>(null)
+  const [copiado, setCopiado] = useState(false)
+
   const iniciais = membro.nome
     .split(" ")
     .slice(0, 2)
     .map((n) => n[0]?.toUpperCase() ?? "")
     .join("")
+
+  async function handleResetarSenha() {
+    if (!confirm(`Redefinir a senha de ${membro.nome}? Uma nova senha temporaria sera gerada.`)) return
+    setResetando(true)
+    setErroReset(null)
+    setSenhaCriada(null)
+
+    const res = await fetch(`/api/membros/${membro.id}/resetar-senha`, { method: "POST" })
+    const data = await res.json()
+
+    if (!res.ok) {
+      setErroReset(data.error ?? "Erro ao redefinir senha")
+    } else {
+      setSenhaCriada(data)
+    }
+    setResetando(false)
+  }
+
+  async function copiarSenha() {
+    if (!senhaCriada) return
+    await navigator.clipboard.writeText(senhaCriada.senhaTemporaria)
+    setCopiado(true)
+    setTimeout(() => setCopiado(false), 2000)
+  }
 
   return (
     <main className="max-w-3xl mx-auto px-4 py-8 space-y-6">
@@ -64,16 +96,14 @@ export default function MembroDetalhe({ membro, isAdmin, isMinhaConta }: MembroD
         <span className="text-zinc-600 font-medium truncate">{membro.nome}</span>
       </nav>
 
-      {/* Cabeçalho */}
+      {/* Cabecalho */}
       <div className="bg-white border border-zinc-200 rounded-2xl p-6">
         <div className="flex items-start gap-5 flex-wrap">
           {/* Avatar */}
           <div className="w-16 h-16 rounded-full bg-violet-100 flex items-center justify-center text-2xl font-bold text-violet-700 shrink-0 overflow-hidden ring-2 ring-violet-200">
-            {membro.fotoPerfil ? (
-              <img src={membro.fotoPerfil} alt={membro.nome} className="w-16 h-16 object-cover" />
-            ) : (
-              iniciais
-            )}
+            {membro.fotoPerfil
+              ? <img src={membro.fotoPerfil} alt={membro.nome} className="w-16 h-16 object-cover" />
+              : iniciais}
           </div>
 
           <div className="flex-1 min-w-0 space-y-1">
@@ -98,33 +128,82 @@ export default function MembroDetalhe({ membro, isAdmin, isMinhaConta }: MembroD
               )}
             </div>
             <p className="text-sm text-zinc-400">{membro.email}</p>
-            {membro.telefone && (
-              <p className="text-sm text-zinc-400">{membro.telefone}</p>
-            )}
+            {membro.telefone && <p className="text-sm text-zinc-400">{membro.telefone}</p>}
           </div>
 
-          {/* Ações */}
-          <div className="flex items-center gap-2 shrink-0">
+          {/* Acoes */}
+          <div className="flex flex-col items-end gap-2 shrink-0">
             {isMinhaConta && (
-              <Link
-                href="/perfil"
-                className="text-sm px-4 py-2 border border-zinc-200 rounded-xl text-zinc-600 hover:border-violet-300 hover:text-violet-700 transition-colors"
-              >
+              <Link href="/perfil"
+                className="text-sm px-4 py-2 border border-zinc-200 rounded-xl text-zinc-600 hover:border-violet-300 hover:text-violet-700 transition-colors">
                 Editar meu perfil
               </Link>
             )}
             {isAdmin && !isMinhaConta && (
-              <Link
-                href={`/membros/${membro.id}/editar`}
-                className="text-sm px-4 py-2 border border-zinc-200 rounded-xl text-zinc-600 hover:border-violet-300 hover:text-violet-700 transition-colors"
-              >
+              <Link href={`/membros/${membro.id}/editar`}
+                className="text-sm px-4 py-2 border border-zinc-200 rounded-xl text-zinc-600 hover:border-violet-300 hover:text-violet-700 transition-colors">
                 Editar
               </Link>
+            )}
+            {isAdmin && (
+              <button
+                onClick={handleResetarSenha}
+                disabled={resetando}
+                className="text-sm px-4 py-2 border border-amber-200 rounded-xl text-amber-600 hover:bg-amber-50 disabled:opacity-50 transition-colors"
+              >
+                {resetando ? "Redefinindo..." : "🔑 Redefinir senha"}
+              </button>
             )}
           </div>
         </div>
 
-        {/* Métricas */}
+        {/* Feedback de erro */}
+        {erroReset && (
+          <div className="mt-4 bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 text-sm">
+            {erroReset}
+          </div>
+        )}
+
+        {/* Feedback de senha criada */}
+        {senhaCriada && (
+          <div className="mt-4 bg-amber-50 border border-amber-200 rounded-xl p-4 space-y-3">
+            <div className="flex items-center gap-2">
+              <span className="text-amber-600 text-lg">🔑</span>
+              <p className="text-sm font-semibold text-amber-800">
+                Senha redefinida para {senhaCriada.nome}
+              </p>
+            </div>
+            <p className="text-xs text-amber-700">
+              Repasse a senha abaixo ao membro. Ela aparece apenas uma vez.
+              No proximo login, sera solicitado criar uma nova senha.
+            </p>
+            <div className="bg-white border border-amber-200 rounded-lg p-3 flex items-center justify-between gap-3">
+              <div>
+                <p className="text-xs text-zinc-400 mb-1">Senha temporaria</p>
+                <p className="text-lg font-mono font-bold text-zinc-900 tracking-widest">
+                  {senhaCriada.senhaTemporaria}
+                </p>
+              </div>
+              <button
+                onClick={copiarSenha}
+                className="text-xs px-3 py-1.5 rounded-lg border border-zinc-200 text-zinc-600 hover:bg-zinc-50 transition-colors shrink-0"
+              >
+                {copiado ? "Copiado!" : "Copiar"}
+              </button>
+            </div>
+            {senhaCriada.emailEnviado ? (
+              <p className="text-xs text-emerald-700">
+                ✉️ Email com a senha temporaria enviado para {senhaCriada.email}.
+              </p>
+            ) : (
+              <p className="text-xs text-amber-600">
+                ⚠️ Nao foi possivel enviar o email. Repasse a senha manualmente ao membro.
+              </p>
+            )}
+          </div>
+        )}
+
+        {/* Metricas */}
         <div className="flex items-center gap-6 mt-5 pt-5 border-t border-zinc-100 flex-wrap">
           <div className="text-center">
             <p className="text-xl font-bold text-zinc-900">{membro.totalCultos}</p>
@@ -132,7 +211,9 @@ export default function MembroDetalhe({ membro, isAdmin, isMinhaConta }: MembroD
           </div>
           {membro.perfil === "CANTOR" && (
             <div className="text-center">
-              <p className="text-xl font-bold text-zinc-900">{membro.musicasVinculadas.filter(m => m.statusMusica === "ATIVA").length}</p>
+              <p className="text-xl font-bold text-zinc-900">
+                {membro.musicasVinculadas.filter((m) => m.statusMusica === "ATIVA").length}
+              </p>
               <p className="text-xs text-zinc-400">musicas vinculadas</p>
             </div>
           )}
@@ -145,7 +226,7 @@ export default function MembroDetalhe({ membro, isAdmin, isMinhaConta }: MembroD
         </div>
       </div>
 
-      {/* Músicas vinculadas — apenas cantores */}
+      {/* Musicas vinculadas — apenas cantores */}
       {membro.perfil === "CANTOR" && membro.musicasVinculadas.length > 0 && (
         <div className="bg-white border border-zinc-200 rounded-2xl p-5">
           <h2 className="text-sm font-semibold text-zinc-800 mb-4">
@@ -154,14 +235,12 @@ export default function MembroDetalhe({ membro, isAdmin, isMinhaConta }: MembroD
           </h2>
           <div className="space-y-2">
             {membro.musicasVinculadas.map((m) => (
-              <div
-                key={m.musicaId}
+              <div key={m.musicaId}
                 className={`flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl border ${
                   m.statusMusica === "ARQUIVADA"
                     ? "border-zinc-100 bg-zinc-50 opacity-60"
                     : "border-zinc-100 hover:border-violet-200 hover:bg-violet-50 transition-colors"
-                }`}
-              >
+                }`}>
                 <div className="min-w-0">
                   <p className="text-sm font-medium text-zinc-800 truncate">{m.titulo}</p>
                   {m.artista && <p className="text-xs text-zinc-400 truncate">{m.artista}</p>}
@@ -180,13 +259,11 @@ export default function MembroDetalhe({ membro, isAdmin, isMinhaConta }: MembroD
         </div>
       )}
 
-      {/* Histórico de cultos */}
+      {/* Historico de cultos */}
       <div className="bg-white border border-zinc-200 rounded-2xl p-5">
         <h2 className="text-sm font-semibold text-zinc-800 mb-4">
           Historico de cultos
-          <span className="ml-2 text-zinc-400 font-normal">
-            ({membro.totalCultos} no total)
-          </span>
+          <span className="ml-2 text-zinc-400 font-normal">({membro.totalCultos} no total)</span>
         </h2>
 
         {membro.cultosRecentes.length === 0 ? (
@@ -194,11 +271,8 @@ export default function MembroDetalhe({ membro, isAdmin, isMinhaConta }: MembroD
         ) : (
           <div className="divide-y divide-zinc-100">
             {membro.cultosRecentes.map((c) => (
-              <Link
-                key={c.cultoId}
-                href={`/cultos/${c.cultoId}`}
-                className="flex items-center justify-between gap-3 py-3 hover:bg-zinc-50 -mx-2 px-2 rounded-lg transition-colors group"
-              >
+              <Link key={c.cultoId} href={`/cultos/${c.cultoId}`}
+                className="flex items-center justify-between gap-3 py-3 hover:bg-zinc-50 -mx-2 px-2 rounded-lg transition-colors group">
                 <div className="min-w-0">
                   <p className="text-sm font-medium text-zinc-800 group-hover:text-violet-700 transition-colors truncate">
                     {c.tipo}{c.subtipo ? ` — ${c.subtipo}` : ""}
