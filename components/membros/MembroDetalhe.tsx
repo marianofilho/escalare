@@ -3,6 +3,7 @@
 
 import { useState } from "react"
 import Link from "next/link"
+import Image from "next/image"
 import type { MembroPerfilResponseDto } from "@/dtos/membro/membro-perfil-response.dto"
 
 const PERFIL_LABEL: Record<string, string> = {
@@ -102,7 +103,7 @@ export default function MembroDetalhe({ membro, isAdmin, isMinhaConta }: MembroD
           {/* Avatar */}
           <div className="w-16 h-16 rounded-full bg-violet-100 flex items-center justify-center text-2xl font-bold text-violet-700 shrink-0 overflow-hidden ring-2 ring-violet-200">
             {membro.fotoPerfil
-              ? <img src={membro.fotoPerfil} alt={membro.nome} className="w-16 h-16 object-cover" />
+              ? <Image src={membro.fotoPerfil} alt={membro.nome} width={64} height={64} className="object-cover" />
               : iniciais}
           </div>
 

@@ -3,6 +3,7 @@
 
 import { useState, useEffect, useCallback } from "react"
 import { useRouter } from "next/navigation"
+import Link from "next/link"
 import type { CriarMusicaDto } from "@/dtos/musica/criar-musica.dto"
 import type { MusicaResponseDto, MusicaCantorResponseDto, MusicaFaixaResponseDto } from "@/dtos/musica/musica-response.dto"
 import type { MembroResponseDto } from "@/dtos/membro/membro-response.dto"
@@ -46,7 +47,6 @@ export default function MusicaForm({ musica }: MusicaFormProps) {
   const [removendo, setRemovendo] = useState<string | null>(null)
 
   // --- Faixas ---
-  // cantorId → estado do formulário de nova faixa
   const [novaFaixa, setNovaFaixa] = useState<Record<string, { instrumento: string; linkAudio: string }>>({})
   const [adicionandoFaixa, setAdicionandoFaixa] = useState<string | null>(null)
   const [removendoFaixa, setRemovendoFaixa] = useState<string | null>(null)
@@ -278,7 +278,7 @@ export default function MusicaForm({ musica }: MusicaFormProps) {
             {!loadingCantores && cantoresDisponiveis.length === 0 && (
               <p className="text-sm text-zinc-400">
                 Nenhum membro com perfil <strong>Cantor</strong> cadastrado.{" "}
-                <a href="/membros/novo" className="text-violet-600 hover:underline">Cadastrar membro</a>
+                <Link href="/membros/novo" className="text-violet-600 hover:underline">Cadastrar membro</Link>
               </p>
             )}
             {!loadingCantores && cantoresDisponiveis.length > 0 && cantoresPendentes.length === 0 && (
@@ -318,7 +318,7 @@ export default function MusicaForm({ musica }: MusicaFormProps) {
 // ---- Painel de faixas de um cantor ----
 
 function CantorFaixasPanel({
-  musicaId, cantor, novaFaixa, onNovaFaixaChange,
+  musicaId: _musicaId, cantor, novaFaixa, onNovaFaixaChange,
   onAdicionarFaixa, onRemoverFaixa, onRemoverCantor,
   adicionando, removendoFaixa, removendo, erro,
 }: {

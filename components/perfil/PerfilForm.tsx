@@ -3,6 +3,7 @@
 
 import { useState, useRef } from "react"
 import { useRouter } from "next/navigation"
+import Image from "next/image"
 import { createSupabaseClient } from "@/lib/supabase"
 import type { MembroResponseDto } from "@/dtos/membro/membro-response.dto"
 import type { AtualizarPerfilDto } from "@/dtos/membro/atualizar-perfil.dto"
@@ -194,8 +195,6 @@ export default function PerfilForm({ membro, igrejaId }: PerfilFormProps) {
 
       setSucesso(true)
 
-      // Renova o cookie de sessao para refletir o user_metadata atualizado
-      // (nome, fotoPerfil) antes do router.refresh() revalidar o layout
       const supabase = createSupabaseClient()
       await supabase.auth.refreshSession()
 
@@ -231,7 +230,7 @@ export default function PerfilForm({ membro, igrejaId }: PerfilFormProps) {
         <div className="relative shrink-0">
           <div className="w-20 h-20 rounded-full bg-violet-100 flex items-center justify-center text-2xl font-bold text-violet-700 overflow-hidden ring-2 ring-violet-200">
             {preview ? (
-              <img src={preview} alt={membro.nome} className="w-20 h-20 object-cover" />
+              <Image src={preview} alt={membro.nome} width={80} height={80} className="object-cover" />
             ) : (
               iniciais
             )}
