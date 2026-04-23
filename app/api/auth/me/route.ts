@@ -5,12 +5,12 @@ import { NaoAutorizadoError, UsuarioNaoEncontradoError } from "@/types/errors"
 
 export async function GET(): Promise<NextResponse> {
   try {
-    const session = await getServerSession()
-    if (!session) {
+    const user = await getServerSession()
+    if (!user) {
       throw new NaoAutorizadoError()
     }
 
-    const usuario = await authService.me(session.user.id)
+    const usuario = await authService.me(user.id)
     return NextResponse.json({ usuario }, { status: 200 })
   } catch (error) {
     if (error instanceof NaoAutorizadoError) {
