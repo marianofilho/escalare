@@ -2,7 +2,7 @@
 import { createSupabaseServerClient } from "@/lib/supabase-server"
 import { redirect, notFound } from "next/navigation"
 import { makeRepertorioService, makeCultoService, makeMusicaService, makeMembroService } from "@/lib/factories"
-import { RepertorioResponseDto } from "@/dtos/repertorio/repertorio-response.dto"
+import { RepertorioMapper } from "@/dtos/repertorio/repertorio-response.dto"
 import { MusicaResponseDto } from "@/dtos/musica/musica-response.dto"
 import { NaoEncontradoError } from "@/types/errors"
 import RepertorioEditor from "@/components/repertorio/RepertorioEditor"
@@ -46,7 +46,7 @@ export default async function RepertorioEditorPage({ params }: Props) {
     if (!isAdmin && !isCantorInscrito) redirect("/repertorio")
 
     const repertorioRaw = await makeRepertorioService().buscarPorCulto(cultoId, igrejaId)
-    const repertorio = repertorioRaw ? RepertorioResponseDto.from(repertorioRaw) : null
+    const repertorio = repertorioRaw ? RepertorioMapper.from(repertorioRaw) : null
 
     const todasMusicas = cantorIdDoRepertorio
       ? await makeMusicaService().listar(igrejaId, { status: "ATIVA" })

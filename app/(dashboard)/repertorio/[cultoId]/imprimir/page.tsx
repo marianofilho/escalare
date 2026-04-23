@@ -2,7 +2,7 @@
 import { notFound, redirect } from "next/navigation"
 import { createSupabaseServerClient } from "@/lib/supabase-server"
 import { makeRepertorioService, makeCultoService } from "@/lib/factories"
-import { RepertorioResponseDto } from "@/dtos/repertorio/repertorio-response.dto"
+import { RepertorioMapper, RepertorioResponseDto } from "@/dtos/repertorio/repertorio-response.dto"
 import { NaoEncontradoError } from "@/types/errors"
 import ImprimirRepertorio from "@/components/repertorio/ImprimirRepertorio"
 import { formatarTipoCulto, formatarDataHora } from "@/utils/culto"
@@ -34,7 +34,7 @@ export default async function ImprimirRepertorioPage({ params }: Props) {
 
     if (!repertorioRaw) notFound()
 
-    repertorio = RepertorioResponseDto.from(repertorioRaw)
+    repertorio = RepertorioMapper.from(repertorioRaw)
     tituloCulto = formatarTipoCulto(culto.tipo)
     dataCulto = formatarDataHora(culto.dataHoraInicio)
 

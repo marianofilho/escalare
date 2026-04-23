@@ -2,7 +2,7 @@
 import { NextResponse } from "next/server"
 import { createSupabaseServerClient } from "@/lib/supabase-server"
 import { CriarRepertorioSchema } from "@/dtos/repertorio/criar-repertorio.dto"
-import { RepertorioResponseDto } from "@/dtos/repertorio/repertorio-response.dto"
+import { RepertorioMapper } from "@/dtos/repertorio/repertorio-response.dto"
 import { makeRepertorioService } from "@/lib/factories"
 import { handleApiError } from "@/lib/api-error-handler"
 
@@ -23,7 +23,7 @@ export async function GET(_req: Request, { params }: RouteParams): Promise<NextR
     const repertorio = await makeRepertorioService().buscarPorCulto(id, igrejaId)
     if (!repertorio) return NextResponse.json(null)
 
-    return NextResponse.json(RepertorioResponseDto.from(repertorio))
+    return NextResponse.json(RepertorioMapper.from(repertorio))
   } catch (error) {
     return handleApiError(error)
   }
@@ -44,7 +44,7 @@ export async function POST(request: Request, { params }: RouteParams): Promise<N
     const dto = CriarRepertorioSchema.parse(body)
 
     const repertorio = await makeRepertorioService().criar(id, igrejaId, membroId, dto.cantorId)
-    return NextResponse.json(RepertorioResponseDto.from(repertorio), { status: 201 })
+    return NextResponse.json(RepertorioMapper.from(repertorio), { status: 201 })
   } catch (error) {
     return handleApiError(error)
   }

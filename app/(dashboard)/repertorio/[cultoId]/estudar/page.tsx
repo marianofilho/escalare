@@ -2,7 +2,7 @@
 import { createSupabaseServerClient } from "@/lib/supabase-server"
 import { redirect, notFound } from "next/navigation"
 import { makeRepertorioService, makeCultoService } from "@/lib/factories"
-import { RepertorioResponseDto } from "@/dtos/repertorio/repertorio-response.dto"
+import { RepertorioMapper } from "@/dtos/repertorio/repertorio-response.dto"
 import { NaoEncontradoError } from "@/types/errors"
 import EstudoPlayer from "@/components/repertorio/EstudoPlayer"
 import BotaoExportarPDF from "@/components/repertorio/BotaoExportarPDF"
@@ -31,7 +31,7 @@ export default async function EstudarPage({ params }: Props) {
 
     if (!repertorioRaw) redirect(`/repertorio/${cultoId}`)
 
-    const repertorio = RepertorioResponseDto.from(repertorioRaw)
+    const repertorio = RepertorioMapper.from(repertorioRaw)
 
     const inscricao = culto.inscricoes.find(
       (i: { membroId: string; instrumento: string }) => i.membroId === membroId
