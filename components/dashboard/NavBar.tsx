@@ -5,6 +5,7 @@ import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { createSupabaseClient } from "@/lib/supabase"
 import { useState, useRef, useEffect } from "react"
+import Image from "next/image"
 import BuscaGlobal from "@/components/dashboard/BuscaGlobal"
 
 interface NavBarProps {
@@ -54,7 +55,11 @@ export default function NavBar({ nomeMembro, fotoPerfil, isAdmin }: NavBarProps)
     async function buscarPendentes() {
       try {
         const res = await fetch("/api/solicitacoes/pendentes/count")
-        if (res.ok) { const data = await res.json(); setPendentes(data.total ?? 0) }
+        if (res.ok) {
+          const data = await res.json()
+          // eslint-disable-next-line react-hooks/set-state-in-effect
+          setPendentes(data.total ?? 0)
+        }
       } catch { /* silencia */ }
     }
     buscarPendentes()
@@ -63,7 +68,10 @@ export default function NavBar({ nomeMembro, fotoPerfil, isAdmin }: NavBarProps)
   }, [isAdmin])
 
   useEffect(() => {
-    if (pathname.startsWith("/admin/solicitacoes")) setPendentes(0)
+    if (pathname.startsWith("/admin/solicitacoes")) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setPendentes(0)
+    }
   }, [pathname])
 
   useEffect(() => {
@@ -143,7 +151,7 @@ export default function NavBar({ nomeMembro, fotoPerfil, isAdmin }: NavBarProps)
                 className="flex items-center justify-center w-9 h-9 rounded-full overflow-hidden ring-2 ring-transparent hover:ring-violet-400 transition-all focus:outline-none focus:ring-violet-500"
                 title={primeiroNome}>
                 {fotoPerfil ? (
-                  <img src={fotoPerfil} alt={nomeMembro} className="w-9 h-9 object-cover" />
+                  <Image src={fotoPerfil} alt={nomeMembro} width={36} height={36} className="object-cover" />
                 ) : (
                   <div className="w-9 h-9 rounded-full bg-violet-100 flex items-center justify-center text-sm font-bold text-violet-700">
                     {iniciais}

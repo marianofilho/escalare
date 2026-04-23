@@ -1,8 +1,9 @@
 // src/components/dashboard/BuscaGlobal.tsx
 "use client"
 
-import { useState, useRef, useEffect, useCallback } from "react"
+import { useState, useRef, useEffect } from "react"
 import { useRouter } from "next/navigation"
+import Image from "next/image"
 import type { ResultadoBusca } from "@/repositories/busca.repository"
 
 const PERFIL_LABEL: Record<string, string> = {
@@ -71,8 +72,6 @@ export default function BuscaGlobal({ onFechar }: BuscaGlobalProps) {
     }
   }
 
-  const icone: Record<string, string> = { membro: "👤", musica: "🎵", culto: "📅" }
-
   return (
     <div className="flex flex-col w-full max-h-[80vh]">
       {/* Input */}
@@ -101,7 +100,7 @@ export default function BuscaGlobal({ onFechar }: BuscaGlobalProps) {
       <div className="overflow-y-auto">
         {query.length >= 2 && !loading && !temResultados && (
           <div className="px-4 py-8 text-center text-sm text-zinc-400">
-            Nenhum resultado para "<strong>{query}</strong>"
+            Nenhum resultado para <strong>{query}</strong>
           </div>
         )}
 
@@ -126,7 +125,9 @@ export default function BuscaGlobal({ onFechar }: BuscaGlobalProps) {
                       onMouseEnter={() => setIndiceSelecionado(idx)}
                       className={`w-full flex items-center gap-3 px-4 py-2.5 text-left transition-colors ${selecionado ? "bg-violet-50" : "hover:bg-zinc-50"}`}>
                       <div className="w-7 h-7 rounded-full bg-violet-100 flex items-center justify-center text-xs font-bold text-violet-700 shrink-0 overflow-hidden">
-                        {m.fotoPerfil ? <img src={m.fotoPerfil} alt={m.nome} className="w-7 h-7 object-cover" /> : iniciais}
+                        {m.fotoPerfil
+                          ? <Image src={m.fotoPerfil} alt={m.nome} width={28} height={28} className="object-cover" />
+                          : iniciais}
                       </div>
                       <div className="min-w-0">
                         <p className="text-sm font-medium text-zinc-800 truncate">{m.nome}</p>
