@@ -7,9 +7,11 @@ import { CultoResponseDto } from "@/dtos/culto/culto-response.dto"
 import { NaoEncontradoError } from "@/types/errors"
 import CultoForm from "@/components/cultos/CultoForm"
 
-interface Props { params: { id: string } }
+interface Props { params: Promise<{ id: string }> }
 
 export default async function EditarCultoPage({ params }: Props) {
+  const { id } = await params
+
   const user = await getServerSession()
   if (!user) redirect("/login")
 
@@ -20,28 +22,32 @@ export default async function EditarCultoPage({ params }: Props) {
   const membroAtual = await membroService.buscarPorId(membroId, igrejaId)
   if (membroAtual.perfil !== "ADMINISTRADOR") redirect("/cultos")
 
-  try {
-    const culto = await makeCultoService().buscarPorId(params.id, igrejaId)
-    const cultoDto = CultoResponseDto.from(culto)
+  let cultoDto: CultoResponseDto
+  let tipoCulto: string
 
-    return (
-      <div className="min-h-screen bg-zinc-50">
-        <div className="max-w-2xl mx-auto px-6 py-10">
-          <div className="mb-8">
-            <Link href="/cultos" className="text-sm text-zinc-400 hover:text-zinc-600 transition-colors">
-              ← Voltar para cultos
-            </Link>
-            <h1 className="text-2xl font-bold text-zinc-900 mt-2">Editar culto</h1>
-            <p className="text-sm text-zinc-400 mt-0.5">{formatarTipoCulto(culto.tipo)}</p>
-          </div>
-          <CultoForm culto={cultoDto} />
-        </div>
-      </div>
-    )
+  try {
+    const culto = await makeCultoService().buscarPorId(id, igrejaId)
+    cultoDto = CultoResponseDto.from(culto)
+    tipoCulto = formatarTipoCulto(culto.tipo)
   } catch (e) {
     if (e instanceof NaoEncontradoError) notFound()
     throw e
   }
+
+  return (
+    <div className="min-h-screen bg-zinc-50">
+      <div className="max-w-2xl mx-auto px-6 py-10">
+        <div className="mb-8">
+          <Link href="/cultos" className="text-sm text-zinc-400 hover:text-zinc-600 transition-colors">
+            ← Voltar para cultos
+          </Link>
+          <h1 className="text-2xl font-bold text-zinc-900 mt-2">Editar culto</h1>
+          <p className="text-sm text-zinc-400 mt-0.5">{tipoCulto}</p>
+        </div>
+        <CultoForm culto={cultoDto} />
+      </div>
+    </div>
+  )
 }
 
 function formatarTipoCulto(tipo: string) {
