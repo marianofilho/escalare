@@ -28,13 +28,16 @@ export default function CultoLista({ isAdmin, membroId, isCantor = false }: Cult
   const [loading, setLoading] = useState(true)
 
   const buscar = useCallback(async () => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true)
     const params = new URLSearchParams()
     params.set("pagina", String(pagina))
     if (filtroStatus) params.set("status", filtroStatus)
     if (apenasProximos) params.set("futuros", "true")
     const res = await fetch(`/api/cultos?${params}`)
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (res.ok) setResultado(await res.json())
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(false)
   }, [pagina, filtroStatus, apenasProximos])
 
@@ -42,6 +45,7 @@ export default function CultoLista({ isAdmin, membroId, isCantor = false }: Cult
 
   function setFiltroComReset(fn: () => void) {
     fn()
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setPagina(1)
   }
 

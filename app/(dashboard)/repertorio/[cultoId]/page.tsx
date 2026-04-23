@@ -33,14 +33,13 @@ export default async function RepertorioEditorPage({ params }: Props) {
   try {
     const culto = await makeCultoService().buscarPorId(cultoId, igrejaId)
 
-    // Usa as inscrições já carregadas no culto (sem prisma direto)
     // Filtra cantores que NÃO marcaram comoInstrumentista
     const inscricaoCantor = culto.inscricoes.find(
       (i) => i.membro.perfil === "CANTOR" && !i.comoInstrumentista
     )
     const cantorIdDoRepertorio = inscricaoCantor?.membroId ?? null
 
-    // Permissão: admin ou cantor inscrito (mesmo que como instrumentista, pode ver)
+    // Permissão: admin ou cantor inscrito
     const isCantorInscrito = perfil === "CANTOR" &&
       culto.inscricoes.some((i) => i.membroId === membroId)
 
@@ -70,7 +69,7 @@ export default async function RepertorioEditorPage({ params }: Props) {
           {!cantorIdDoRepertorio && (
             <div className="mt-3 bg-amber-50 border border-amber-200 text-amber-700 rounded-lg px-4 py-2 text-sm">
               Nenhum cantor inscrito para cantar neste culto. Um membro com perfil{" "}
-              <strong>Cantor</strong> precisa se inscrever (sem marcar "participar so como instrumentista")
+              <strong>Cantor</strong> precisa se inscrever (sem marcar &quot;participar so como instrumentista&quot;)
               antes de criar o repertorio.
             </div>
           )}
