@@ -3,6 +3,7 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
+import Image from "next/image"
 import type { SolicitacaoResponseDto } from "@/dtos/solicitacao/solicitacao.dto"
 
 interface Props {
@@ -16,7 +17,7 @@ function Avatar({ nome, foto }: { nome: string; foto: string | null }) {
   return (
     <div className="w-9 h-9 rounded-full bg-violet-100 flex items-center justify-center text-sm font-bold text-violet-700 shrink-0 overflow-hidden">
       {foto
-        ? <img src={foto} alt={nome} className="w-9 h-9 object-cover" />
+        ? <Image src={foto} alt={nome} width={36} height={36} className="object-cover" />
         : nome[0]?.toUpperCase()
       }
     </div>

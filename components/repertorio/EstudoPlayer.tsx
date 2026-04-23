@@ -64,17 +64,7 @@ export default function EstudoPlayer({ repertorio, instrumentoDoMembro }: Props)
     [instrumentoDoMembro]
   )
 
-  useEffect(() => {
-    if (!itemAtivo) return
-    pararAudio()
-    selecionarFaixaParaMembro(itemAtivo)
-  }, [itemAtivo, selecionarFaixaParaMembro])
-
-  useEffect(() => {
-    if (audioRef.current) audioRef.current.playbackRate = velocidade
-  }, [velocidade])
-
-  function pararAudio() {
+  const pararAudio = useCallback(() => {
     if (audioRef.current) {
       audioRef.current.pause()
       audioRef.current.removeAttribute("src")
@@ -84,7 +74,17 @@ export default function EstudoPlayer({ repertorio, instrumentoDoMembro }: Props)
     setProgresso(0)
     setDuracao(0)
     setErroAudio(null)
-  }
+  }, [])
+
+  useEffect(() => {
+    if (!itemAtivo) return
+    pararAudio()
+    selecionarFaixaParaMembro(itemAtivo)
+  }, [itemAtivo, selecionarFaixaParaMembro, pararAudio])
+
+  useEffect(() => {
+    if (audioRef.current) audioRef.current.playbackRate = velocidade
+  }, [velocidade])
 
   function handleSelecionarItem(item: ItemRepertorioResponseDto) {
     setItemAtivo(item)
