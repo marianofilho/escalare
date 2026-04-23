@@ -27,21 +27,21 @@ export interface InscricaoResponseDto {
 }
 
 export class CultoResponseDto {
-  id: string
-  tipo: string
-  subtipo: string | null
-  dataHoraInicio: string
-  dataHoraFim: string | null
-  cantorId: string | null
-  status: string
-  inscricoesAbertas: boolean
-  prazoCancelamentoHoras: number
-  repetirSemanal: boolean
-  observacoesInternas: string | null
-  limites: LimiteInstrumentoResponseDto[]
-  inscricoes: InscricaoResponseDto[]
-  totalInscritos: number
-  criadoEm: string
+  id!: string
+  tipo!: string
+  subtipo!: string | null
+  dataHoraInicio!: string
+  dataHoraFim!: string | null
+  cantorId!: string | null
+  status!: string
+  inscricoesAbertas!: boolean
+  prazoCancelamentoHoras!: number
+  repetirSemanal!: boolean
+  observacoesInternas!: string | null
+  limites!: LimiteInstrumentoResponseDto[]
+  inscricoes!: InscricaoResponseDto[]
+  totalInscritos!: number
+  criadoEm!: string
 
   static from(culto: CultoComRelacoes): CultoResponseDto {
     const contaPorInstrumento = culto.inscricoes.reduce<Record<string, number>>((acc, i) => {

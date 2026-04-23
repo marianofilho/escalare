@@ -26,18 +26,18 @@ type MusicaComRelacoes = Musica & {
 }
 
 export class MusicaResponseDto {
-  id: string
-  titulo: string
-  artista: string | null
-  bpm: number | null
-  linkVideo: string | null
-  linkCifra: string | null
-  linkPartitura: string | null
-  status: string
-  cantores: MusicaCantorResponseDto[]
-  totalCantores: number
-  criadoEm: string
-  atualizadoEm: string
+  id!: string
+  titulo!: string
+  artista!: string | null
+  bpm!: number | null
+  linkVideo!: string | null
+  linkCifra!: string | null
+  linkPartitura!: string | null
+  status!: string
+  cantores!: MusicaCantorResponseDto[]
+  totalCantores!: number
+  criadoEm!: string
+  atualizadoEm!: string
 
   static from(musica: MusicaComRelacoes): MusicaResponseDto {
     return {
