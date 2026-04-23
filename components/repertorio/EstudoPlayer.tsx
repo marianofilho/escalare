@@ -4,7 +4,7 @@
 import { useState, useRef, useEffect, useCallback } from "react"
 import type {
   RepertorioInterfaceResponseDto,
-  ItemRepertorioInterfaceResponseDto,
+  ItemRepertorioResponseDto,
   FaixaEstudoDto,
 } from "@/dtos/repertorio/repertorio-response.dto"
 
