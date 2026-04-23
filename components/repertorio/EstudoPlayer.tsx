@@ -3,13 +3,13 @@
 
 import { useState, useRef, useEffect, useCallback } from "react"
 import type {
-  RepertorioResponseDto,
-  ItemRepertorioResponseDto,
+  RepertorioInterfaceResponseDto,
+  ItemRepertorioInterfaceResponseDto,
   FaixaEstudoDto,
 } from "@/dtos/repertorio/repertorio-response.dto"
 
 interface Props {
-  repertorio: RepertorioResponseDto
+  repertorio: RepertorioInterfaceResponseDto
   instrumentoDoMembro: string | null
 }
 
