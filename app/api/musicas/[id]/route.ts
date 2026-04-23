@@ -7,7 +7,7 @@ import { makeMusicaService } from "@/lib/factories"
 import { handleApiError } from "@/lib/api-error-handler"
 
 interface RouteParams {
-  params: { id: string }
+  params: Promise<{ id: string }>
 }
 
 export async function GET(_req: Request, { params }: RouteParams): Promise<NextResponse> {
@@ -17,9 +17,9 @@ export async function GET(_req: Request, { params }: RouteParams): Promise<NextR
     const session = await getServerSession()
     if (!session) return NextResponse.json({ error: "Não autorizado" }, { status: 401 })
 
-    const usuario = session.user_metadata?.igrejaId
+    const igrejaId = session.user_metadata?.igrejaId as string
 
-    const musica = await makeMusicaService().buscarPorId(id, usuario.igrejaId)
+    const musica = await makeMusicaService().buscarPorId(id, igrejaId)
     return NextResponse.json(MusicaResponseDto.from(musica))
   } catch (error) {
     return handleApiError(error)
@@ -33,11 +33,13 @@ export async function PATCH(request: Request, { params }: RouteParams): Promise<
     const session = await getServerSession()
     if (!session) return NextResponse.json({ error: "Não autorizado" }, { status: 401 })
 
-    const usuario = session.user_metadata?.igrejaId
+    const igrejaId = session.user_metadata?.igrejaId as string
+    const membroId = session.user_metadata?.membroId as string
+
     const body: unknown = await request.json()
     const dto = AtualizarMusicaSchema.parse(body)
 
-    const musica = await makeMusicaService().atualizar(id, usuario.igrejaId, dto, usuario.id)
+    const musica = await makeMusicaService().atualizar(id, igrejaId, dto, membroId)
     return NextResponse.json(MusicaResponseDto.from(musica))
   } catch (error) {
     return handleApiError(error)
@@ -52,9 +54,10 @@ export async function DELETE(_req: Request, { params }: RouteParams): Promise<Ne
     const session = await getServerSession()
     if (!session) return NextResponse.json({ error: "Não autorizado" }, { status: 401 })
 
-    const usuario = session.user_metadata?.igrejaId
+    const igrejaId = session.user_metadata?.igrejaId as string
+    const membroId = session.user_metadata?.membroId as string
 
-    await makeMusicaService().arquivar(id, usuario.igrejaId, usuario.id)
+    await makeMusicaService().arquivar(id, igrejaId, membroId)
     return new NextResponse(null, { status: 204 })
   } catch (error) {
     return handleApiError(error)
