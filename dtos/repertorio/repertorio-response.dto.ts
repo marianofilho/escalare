@@ -1,7 +1,7 @@
 // src/dtos/repertorio/repertorio-response.dto.ts
 import type {
   Repertorio, ItemRepertorio, Musica,
-  MusicaCantor, MusicaFaixa, Membro, Culto,
+  MusicaCantor, MusicaFaixa, Membro,
 } from "@prisma/client"
 
 // Mantém o link original — a conversão para preview é feita no componente
@@ -12,7 +12,7 @@ function converterLinkDrive(link: string): string {
 export interface FaixaEstudoDto {
   id: string
   instrumento: string
-  linkAudio: string // já convertido para download
+  linkAudio: string
 }
 
 export interface MusicaCantorEstudoDto {
@@ -31,11 +31,10 @@ export interface ItemRepertorioResponseDto {
   ordem: number | null
   tomUsado: string
   observacoes: string | null
-  // Faixas do cantor deste repertório (para a tela de estudo)
   cantorInfo: MusicaCantorEstudoDto | null
 }
 
-export interface RepertorioInterfaceResponseDto {
+export interface RepertorioResponseDto {
   id: string
   cultoId: string
   cantorId: string
@@ -56,8 +55,9 @@ type RepertorioRaw = Repertorio & {
   itens: ItemRaw[]
 }
 
-export class RepertorioResponseDto {
-  static from(repertorio: RepertorioRaw): RepertorioInterfaceResponseDto {
+// Classe renomeada para evitar conflito de nome com a interface acima
+export class RepertorioMapper {
+  static from(repertorio: RepertorioRaw): RepertorioResponseDto {
     return {
       id: repertorio.id,
       cultoId: repertorio.cultoId,
@@ -66,7 +66,6 @@ export class RepertorioResponseDto {
       itens: repertorio.itens
         .sort((a, b) => (a.ordem ?? 999) - (b.ordem ?? 999))
         .map((item) => {
-          // Busca o vínculo do cantor do repertório com esta música
           const vincCantor = item.musica.cantores.find(
             (mc) => mc.cantorId === repertorio.cantorId
           ) ?? null
@@ -81,7 +80,6 @@ export class RepertorioResponseDto {
             ordem: item.ordem ?? null,
             tomUsado: item.tomUsado,
             observacoes: item.observacoes ?? null,
-            cantorNome: repertorio.cantor.nome,
             cantorInfo: vincCantor
               ? {
                   cantorNome: repertorio.cantor.nome,
