@@ -126,14 +126,14 @@ model LimiteInstrumento {
 }
 
 model InscricaoCulto {
-  id               String   @id @default(cuid())
-  membroId         String
-  cultoId          String
-  instrumento      String
-  fazBacking       Boolean  @default(false)
-  ausente          Boolean  @default(false)
-  comoInstrumentista Boolean @default(false) // cantor participando só como músico
-  criadoEm         DateTime @default(now())
+  id                String   @id @default(cuid())
+  membroId          String
+  cultoId           String
+  instrumento       String
+  fazBacking        Boolean  @default(false)
+  comoInstrumentista Boolean @default(false)   // ← adicionar esta linha
+  ausente           Boolean  @default(false)
+  criadoEm          DateTime @default(now())
 
   membro      Membro   @relation(fields: [membroId], references: [id])
   culto       Culto    @relation(fields: [cultoId], references: [id], onDelete: Cascade)

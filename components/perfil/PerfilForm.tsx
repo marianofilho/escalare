@@ -24,7 +24,7 @@ const PERFIL_LABEL: Record<string, string> = {
 
 async function redimensionarImagem(file: File): Promise<Blob> {
   return new Promise((resolve, reject) => {
-    const img = new Image()
+    const img = new window.Image()
     const url = URL.createObjectURL(file)
 
     img.onload = () => {
