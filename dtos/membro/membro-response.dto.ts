@@ -2,18 +2,18 @@
 import type { Membro } from "@prisma/client"
 
 export class MembroResponseDto {
-  id: string
-  nome: string
-  email: string
-  telefone: string | null
-  fotoPerfil: string | null
-  perfil: string
-  instrumentoPrincipal: string | null
-  instrumentoSecundario: string | null
-  fazBackingVocal: boolean
-  status: string
-  dataIngresso: string | null
-  criadoEm: string
+  id!: string
+  nome!: string
+  email!: string
+  telefone!: string | null
+  fotoPerfil!: string | null
+  perfil!: string
+  instrumentoPrincipal!: string | null
+  instrumentoSecundario!: string | null
+  fazBackingVocal!: boolean
+  status!: string
+  dataIngresso!: string | null
+  criadoEm!: string
 
   static from(membro: Membro): MembroResponseDto {
     return {

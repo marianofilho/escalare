@@ -35,7 +35,7 @@ export interface ItemRepertorioResponseDto {
   cantorInfo: MusicaCantorEstudoDto | null
 }
 
-export interface RepertorioResponseDto {
+export interface RepertorioInterfaceResponseDto {
   id: string
   cultoId: string
   cantorId: string
@@ -57,7 +57,7 @@ type RepertorioRaw = Repertorio & {
 }
 
 export class RepertorioResponseDto {
-  static from(repertorio: RepertorioRaw): RepertorioResponseDto {
+  static from(repertorio: RepertorioRaw): RepertorioInterfaceResponseDto {
     return {
       id: repertorio.id,
       cultoId: repertorio.cultoId,
