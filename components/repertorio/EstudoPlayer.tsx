@@ -78,6 +78,7 @@ export default function EstudoPlayer({ repertorio, instrumentoDoMembro }: Props)
 
   useEffect(() => {
     if (!itemAtivo) return
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     pararAudio()
     selecionarFaixaParaMembro(itemAtivo)
   }, [itemAtivo, selecionarFaixaParaMembro, pararAudio])
