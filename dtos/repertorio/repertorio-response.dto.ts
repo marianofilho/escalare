@@ -81,6 +81,7 @@ export class RepertorioResponseDto {
             ordem: item.ordem ?? null,
             tomUsado: item.tomUsado,
             observacoes: item.observacoes ?? null,
+            cantorNome: repertorio.cantor.nome,
             cantorInfo: vincCantor
               ? {
                   cantorNome: repertorio.cantor.nome,
