@@ -3,6 +3,7 @@
 
 import { useState } from "react"
 import Link from "next/link"
+import Image from "next/image"
 import { useRouter } from "next/navigation"
 import type { CultoResponseDto, InscricaoResponseDto } from "@/dtos/culto/culto-response.dto"
 import type { MembroResponseDto } from "@/dtos/membro/membro-response.dto"
@@ -59,21 +60,22 @@ interface CultoDetalheProps {
 
 function Avatar({ nome, foto, destaque }: { nome: string; foto: string | null; destaque?: boolean }) {
   return (
-    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${
+    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0 overflow-hidden ${
       destaque ? "bg-violet-200 text-violet-800 ring-2 ring-violet-400" : "bg-zinc-200 text-zinc-600"
     }`}>
-      {foto ? <img src={foto} alt={nome} className="w-8 h-8 rounded-full object-cover" /> : nome[0].toUpperCase()}
+      {foto
+        ? <Image src={foto} alt={nome} width={32} height={32} className="object-cover" />
+        : nome[0].toUpperCase()}
     </div>
   )
 }
 
 function InscritoCard({
-  inscricao, isMe, isAdmin, cultoId, onAusenciaToggle, onCancelarAdmin,
+  inscricao, isMe, isAdmin, onAusenciaToggle, onCancelarAdmin,
 }: {
   inscricao: InscricaoResponseDto
   isMe: boolean
   isAdmin: boolean
-  cultoId: string
   onAusenciaToggle: (membroId: string, ausente: boolean) => Promise<void>
   onCancelarAdmin: (membroId: string) => Promise<void>
 }) {
@@ -132,14 +134,11 @@ function InscritoCard({
   )
 }
 
-// Painel exclusivo do admin para inscrever membros
 function PainelInscricaoAdmin({
-  cultoId,
   membrosDisponiveis,
   inscricoes,
   onInscrever,
 }: {
-  cultoId: string
   membrosDisponiveis: MembroResponseDto[]
   inscricoes: InscricaoResponseDto[]
   onInscrever: (membroIdAlvo: string, instrumento: string, fazBacking: boolean, comoInstrumentista: boolean) => Promise<void>
@@ -152,7 +151,6 @@ function PainelInscricaoAdmin({
   const [erro, setErro] = useState<string | null>(null)
   const [aberto, setAberto] = useState(false)
 
-  // Filtra membros que nao estao inscritos ainda
   const membrosNaoInscritos = membrosDisponiveis.filter(
     (m) => !inscricoes.some((i) => i.membroId === m.id)
   )
@@ -321,7 +319,6 @@ export default function CultoDetalhe({
     const data = await res.json()
     if (!res.ok) { alert(data.error ?? "Erro ao inscrever membro"); return }
 
-    // Adiciona o membro inscrito na lista local
     const membro = membrosDisponiveis.find((m) => m.id === membroIdAlvo)
     if (membro) {
       setInscricoes((prev) => [...prev, {
@@ -493,7 +490,6 @@ export default function CultoDetalhe({
             <h2 className="text-sm font-semibold text-zinc-800">Gerenciar inscricoes</h2>
           </div>
           <PainelInscricaoAdmin
-            cultoId={culto.id}
             membrosDisponiveis={membrosDisponiveis}
             inscricoes={inscricoes}
             onInscrever={handleInscreverAdmin}
@@ -520,7 +516,6 @@ export default function CultoDetalhe({
                       inscricao={inscricao}
                       isMe={inscricao.membroId === membroId}
                       isAdmin={isAdmin}
-                      cultoId={culto.id}
                       onAusenciaToggle={handleAusenciaToggle}
                       onCancelarAdmin={handleCancelarAdmin}
                     />
