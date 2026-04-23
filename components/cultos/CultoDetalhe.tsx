@@ -265,7 +265,8 @@ export default function CultoDetalhe({
     if (!res.ok) { setErro(data.error); setInscrevendo(false); return }
     setInscricoes((prev) => [...prev, {
       id: data.id, membroId, membroNome: data.membroNome ?? "Voce",
-      membroFoto: null, instrumento, fazBacking, ausente: false, comoInstrumentista,
+      membroFoto: null, membroPerfil: data.membroPerfil ?? "MUSICO",
+      instrumento, fazBacking, ausente: false, comoInstrumentista,
     }])
     setMostrarForm(false); setInstrumento(""); setInscrevendo(false)
     router.refresh()
@@ -326,6 +327,7 @@ export default function CultoDetalhe({
         membroId: membro.id,
         membroNome: membro.nome,
         membroFoto: membro.fotoPerfil ?? null,
+        membroPerfil: membro.perfil,
         instrumento: inst,
         fazBacking: backing,
         ausente: false,
