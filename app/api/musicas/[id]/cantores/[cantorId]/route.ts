@@ -6,12 +6,12 @@ import { makeMusicaService } from "@/lib/factories"
 import { handleApiError } from "@/lib/api-error-handler"
 
 interface RouteParams {
-  params: { id: string; cantorId: string }
+  params: Promise<{ id: string; cantorId: string }>
 }
 
 // PATCH /api/musicas/[id]/cantores/[cantorId] — atualiza tom e links do cantor
 export async function PATCH(request: Request, { params }: RouteParams): Promise<NextResponse> {
-  try {    
+  try {
     const { id, cantorId } = await params
 
     const session = await getServerSession()
