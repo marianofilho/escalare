@@ -57,7 +57,6 @@ export default function NavBar({ nomeMembro, fotoPerfil, isAdmin }: NavBarProps)
         const res = await fetch("/api/solicitacoes/pendentes/count")
         if (res.ok) {
           const data = await res.json()
-          // eslint-disable-next-line react-hooks/set-state-in-effect
           setPendentes(data.total ?? 0)
         }
       } catch { /* silencia */ }
@@ -69,7 +68,6 @@ export default function NavBar({ nomeMembro, fotoPerfil, isAdmin }: NavBarProps)
 
   useEffect(() => {
     if (pathname.startsWith("/admin/solicitacoes")) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setPendentes(0)
     }
   }, [pathname])

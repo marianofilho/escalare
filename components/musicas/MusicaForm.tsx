@@ -251,7 +251,6 @@ export default function MusicaForm({ musica }: MusicaFormProps) {
               {cantores.map((c) => (
                 <CantorFaixasPanel
                   key={c.cantorId}
-                  musicaId={musica!.id}
                   cantor={c}
                   novaFaixa={novaFaixa[c.cantorId] ?? { instrumento: "", linkAudio: "" }}
                   onNovaFaixaChange={(campo, valor) =>
@@ -318,11 +317,10 @@ export default function MusicaForm({ musica }: MusicaFormProps) {
 // ---- Painel de faixas de um cantor ----
 
 function CantorFaixasPanel({
-  musicaId: _musicaId, cantor, novaFaixa, onNovaFaixaChange,
+  cantor, novaFaixa, onNovaFaixaChange,
   onAdicionarFaixa, onRemoverFaixa, onRemoverCantor,
   adicionando, removendoFaixa, removendo, erro,
 }: {
-  musicaId: string
   cantor: MusicaCantorResponseDto
   novaFaixa: { instrumento: string; linkAudio: string }
   onNovaFaixaChange: (campo: "instrumento" | "linkAudio", valor: string) => void
