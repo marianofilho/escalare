@@ -16,7 +16,7 @@ const PUBLIC_ROUTES = ["/login", "/cadastro", "/trocar-senha", "/auth/callback",
 export async function proxy(request: NextRequest): Promise<NextResponse> {
   let response = NextResponse.next({ request })
 
-  const supabase = createServerClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+  const supabase = createServerClient(SUPABASE_URL!, SUPABASE_ANON_KEY!, {
     cookies: {
       getAll() {
         return request.cookies.getAll()
