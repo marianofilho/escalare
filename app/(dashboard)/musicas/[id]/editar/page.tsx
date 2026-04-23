@@ -28,12 +28,20 @@ export default async function EditarMusicaPage({ params }: Props) {
   if (perfil !== "ADMINISTRADOR") redirect("/musicas")
 
   const igrejaId = session.user.user_metadata?.igrejaId as string
+  let musicaDto: MusicaResponseDto
+  let musica
 
   try {
-    const musica = await makeMusicaService().buscarPorId(id, igrejaId)
-    const musicaDto = MusicaResponseDto.from(musica)
+    musica = await makeMusicaService().buscarPorId(id, igrejaId)
+    musicaDto = MusicaResponseDto.from(musica)
 
-    return (
+    
+  } catch (error) {
+    if (error instanceof NaoEncontradoError) notFound()
+    throw error
+  }
+
+  return (
       <div className="max-w-2xl mx-auto px-6 py-10">
         <div className="mb-8">
           <Link href="/musicas" className="text-sm text-zinc-400 hover:text-zinc-600 transition-colors">
@@ -45,8 +53,4 @@ export default async function EditarMusicaPage({ params }: Props) {
         <MusicaForm musica={musicaDto} />
       </div>
     )
-  } catch (error) {
-    if (error instanceof NaoEncontradoError) notFound()
-    throw error
-  }
 }

@@ -4,6 +4,7 @@ import { createSupabaseServerClient } from "@/lib/supabase-server"
 import { makeMembroService } from "@/lib/factories"
 import { NaoEncontradoError } from "@/types/errors"
 import MembroDetalhe from "@/components/membros/MembroDetalhe"
+import { MembroPerfilResponseDto } from "@/dtos/membro/membro-perfil-response.dto"
 
 export const dynamic = "force-dynamic"
 
@@ -26,18 +27,22 @@ export default async function MembroDetalhePage({ params }: PageProps) {
   const isAdmin = membroLogado.perfil === "ADMINISTRADOR"
   const isMinhaConta = membroLogadoId === id
 
+  let perfil: MembroPerfilResponseDto;
+
   // Qualquer membro pode ver o perfil de outro (somente leitura)
   try {
-    const perfil = await makeMembroService().buscarPerfilCompleto(id, igrejaId)
-    return (
+     perfil = await makeMembroService().buscarPerfilCompleto(id, igrejaId)
+    
+  } catch (error) {
+    if (error instanceof NaoEncontradoError) notFound()
+    throw error
+  }
+
+  return (
       <MembroDetalhe
         membro={perfil}
         isAdmin={isAdmin}
         isMinhaConta={isMinhaConta}
       />
     )
-  } catch (error) {
-    if (error instanceof NaoEncontradoError) notFound()
-    throw error
-  }
 }

@@ -22,6 +22,10 @@ export default async function ImprimirRepertorioPage({ params }: Props) {
 
   const igrejaId = session.user.user_metadata?.igrejaId as string
 
+  let repertorio: RepertorioResponseDto
+  let tituloCulto:string
+  let dataCulto:string
+
   try {
     const [culto, repertorioRaw] = await Promise.all([
       makeCultoService().buscarPorId(cultoId, igrejaId),
@@ -30,11 +34,17 @@ export default async function ImprimirRepertorioPage({ params }: Props) {
 
     if (!repertorioRaw) notFound()
 
-    const repertorio = RepertorioResponseDto.from(repertorioRaw)
-    const tituloCulto = formatarTipoCulto(culto.tipo)
-    const dataCulto = formatarDataHora(culto.dataHoraInicio)
+    repertorio = RepertorioResponseDto.from(repertorioRaw)
+    tituloCulto = formatarTipoCulto(culto.tipo)
+    dataCulto = formatarDataHora(culto.dataHoraInicio)
 
-    return (
+    
+  } catch (error) {
+    if (error instanceof NaoEncontradoError) notFound()
+    throw error
+  }
+
+  return (
       <ImprimirRepertorio
         repertorio={repertorio}
         tituloCulto={tituloCulto}
@@ -42,8 +52,4 @@ export default async function ImprimirRepertorioPage({ params }: Props) {
         voltarHref={`/repertorio/${cultoId}/estudar`}
       />
     )
-  } catch (error) {
-    if (error instanceof NaoEncontradoError) notFound()
-    throw error
-  }
 }
