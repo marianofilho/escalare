@@ -5,6 +5,7 @@ import { CriarRepertorioSchema } from "@/dtos/repertorio/criar-repertorio.dto"
 import { RepertorioMapper } from "@/dtos/repertorio/repertorio-response.dto"
 import { makeRepertorioService } from "@/lib/factories"
 import { handleApiError } from "@/lib/api-error-handler"
+import { resolveSession } from "@/lib/resolve-session"
 
 interface RouteParams {
   params: Promise<{ id: string }>
@@ -36,9 +37,11 @@ export async function POST(request: Request, { params }: RouteParams): Promise<N
     const supabase = await createSupabaseServerClient()
     const { data: { session } } = await supabase.auth.getSession()
     if (!session) return NextResponse.json({ error: "Não autorizado" }, { status: 401 })
+    
+    const resolved = await resolveSession(session)
+    if (!resolved) return NextResponse.json({ error: "Membro não encontrado" }, { status: 403 })
 
-    const igrejaId = session.user.user_metadata?.igrejaId as string
-    const membroId = session.user.user_metadata?.membroId as string
+    const { igrejaId, membroId } = resolved
 
     const body: unknown = await request.json()
     const dto = CriarRepertorioSchema.parse(body)
