@@ -1,20 +1,29 @@
 // src/app/(dashboard)/membros/page.tsx
 import Link from "next/link"
-import { getServerSession } from "@/lib/supabase-server"
+import { createSupabaseServerClient } from "@/lib/supabase-server"
 import { redirect } from "next/navigation"
 import { makeMembroService } from "@/lib/factories"
+import { resolveSession } from "@/lib/resolve-session"
 import MembroLista from "@/components/membros/MembroLista"
 
 export default async function MembrosPage() {
-  const user = await getServerSession()
-  if (!user) redirect("/login")
+  const supabase = await createSupabaseServerClient()
+  const { data: { session } } = await supabase.auth.getSession()
+  if (!session) redirect("/login")
 
-  const igrejaId = user.user_metadata?.igrejaId as string
-  const membroId = user.user_metadata?.membroId as string
+  const resolved = await resolveSession(session)
+  console.log("[membros/page] resolved:", resolved)
+
+  if (!resolved) redirect("/login")
+
+  const { igrejaId, membroId } = resolved
 
   const service = makeMembroService()
   const membroAtual = await service.buscarPorId(membroId, igrejaId)
   const isAdmin = membroAtual.perfil === "ADMINISTRADOR"
+  
+  console.log("[membros/page] membroAtual:", membroAtual)
+ console.log("[membros/page] isAdmin:", isAdmin)
 
   return (
     <div className="min-h-screen bg-zinc-50">

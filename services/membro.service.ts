@@ -22,6 +22,14 @@ export class MembroService {
     return this.membroRepository.listarPorIgreja(igrejaId, filtros)
   }
 
+  async listarPaginado(
+    igrejaId: string,
+    filtros?: { status?: "ATIVO" | "INATIVO"; perfil?: string },
+    pagina = 1
+  ) {
+    return this.membroRepository.listarPaginado(igrejaId, filtros, pagina)
+  }
+
   async buscarPorId(id: string, igrejaId: string) {
     const membro = await this.membroRepository.findById(id, igrejaId)
     if (!membro) throw new NaoEncontradoError("Membro", id)

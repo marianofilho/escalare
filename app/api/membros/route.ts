@@ -1,6 +1,6 @@
 // src/app/api/membros/route.ts
 import { NextResponse } from "next/server"
-import { createSupabaseServerClient, getServerSession } from "@/lib/supabase-server"
+import { createSupabaseServerClient } from "@/lib/supabase-server"
 import { supabaseAdmin } from "@/lib/supabase-admin"
 import { Resend } from "resend"
 import { CriarMembroSchema } from "@/dtos/membro/criar-membro.dto"
@@ -87,21 +87,28 @@ function emailBoasVindas({
 
 export async function GET(request: Request): Promise<NextResponse> {
   try {
-    const user = await getServerSession()
-    if (!user) return NextResponse.json({ error: "Não autorizado" }, { status: 401 })
+    const supabase = await createSupabaseServerClient()
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session) return NextResponse.json({ error: "Não autorizado" }, { status: 401 })
 
-    const igrejaId = user.user_metadata?.igrejaId as string
+    const resolved = await resolveSession(session)
+    if (!resolved) return NextResponse.json({ error: "Membro não encontrado" }, { status: 403 })
+
+    const { igrejaId } = resolved
+
     const { searchParams } = new URL(request.url)
     const status = searchParams.get("status") as "ATIVO" | "INATIVO" | null
     const perfil = searchParams.get("perfil") ?? undefined
 
-    const service = makeMembroService()
-    const membros = await service.listar(igrejaId, {
+    const membros = await makeMembroService().listarPaginado(igrejaId, {
       ...(status ? { status } : {}),
       ...(perfil ? { perfil } : {}),
     })
 
-    return NextResponse.json(membros.map(MembroResponseDto.from))
+    return NextResponse.json({
+      ...membros,
+      data: membros.data.map(MembroResponseDto.from),
+    })
   } catch (error) {
     return handleApiError(error)
   }
@@ -109,10 +116,8 @@ export async function GET(request: Request): Promise<NextResponse> {
 
 export async function POST(request: Request): Promise<NextResponse> {
   try {
-
     const supabase = await createSupabaseServerClient()
     const { data: { session } } = await supabase.auth.getSession()
-
     if (!session) return NextResponse.json({ error: "Não autorizado" }, { status: 401 })
 
     const resolved = await resolveSession(session)
