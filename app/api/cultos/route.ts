@@ -1,6 +1,6 @@
 // src/app/api/cultos/route.ts — GET atualizado com paginação
 import { NextResponse } from "next/server"
-import { getServerSession } from "@/lib/supabase-server"
+import { createSupabaseServerClient, getServerSession } from "@/lib/supabase-server"
 import { CriarCultoSchema } from "@/dtos/culto/criar-culto.dto"
 import { CultoResponseDto } from "@/dtos/culto/culto-response.dto"
 import { makeCultoService, makeMembroService } from "@/lib/factories"
@@ -9,6 +9,7 @@ import { MembroRepository } from "@/repositories/membro.repository"
 import { IgrejaRepository } from "@/repositories/igreja.repository"
 import { CultoRepository } from "@/repositories/culto.repository"
 import { handleApiError } from "@/lib/api-error-handler"
+import { resolveSession } from "@/lib/resolve-session"
 
 export async function GET(request: Request): Promise<NextResponse> {
   try {
@@ -43,11 +44,14 @@ export async function GET(request: Request): Promise<NextResponse> {
 
 export async function POST(request: Request): Promise<NextResponse> {
   try {
-    const user = await getServerSession()
-    if (!user) return NextResponse.json({ error: "Nao autorizado" }, { status: 401 })
+    const supabase = await createSupabaseServerClient()
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session) return NextResponse.json({ error: "Nao autorizado" }, { status: 401 })
 
-    const igrejaId = user.user_metadata?.igrejaId as string
-    const membroId = user.user_metadata?.membroId as string
+    const resolved = await resolveSession(session)
+    if (!resolved) return NextResponse.json({ error: "Membro não encontrado" }, { status: 403 })
+    
+    const { igrejaId, membroId } = resolved
 
     const membroAtual = await makeMembroService().buscarPorId(membroId, igrejaId)
     if (membroAtual.perfil !== "ADMINISTRADOR") {

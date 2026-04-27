@@ -4,6 +4,7 @@ import { createSupabaseServerClient } from "@/lib/supabase-server"
 import { AtualizarItemSchema } from "@/dtos/repertorio/criar-repertorio.dto"
 import { makeRepertorioService } from "@/lib/factories"
 import { handleApiError } from "@/lib/api-error-handler"
+import { resolveSession } from "@/lib/resolve-session"
 
 interface RouteParams {
   params: Promise<{ id: string; itemId: string }>
@@ -38,10 +39,12 @@ export async function DELETE(_req: Request, { params }: RouteParams): Promise<Ne
 
     const supabase = await createSupabaseServerClient()
     const { data: { session } } = await supabase.auth.getSession()
-    if (!session) return NextResponse.json({ error: "Não autorizado" }, { status: 401 })
+    if (!session) return NextResponse.json({ error: "Nao autorizado" }, { status: 401 })
 
-    const igrejaId = session.user.user_metadata?.igrejaId as string
-    const membroId = session.user.user_metadata?.membroId as string
+    const resolved = await resolveSession(session)
+    if (!resolved) return NextResponse.json({ error: "Membro não encontrado" }, { status: 403 })
+    
+    const { igrejaId, membroId } = resolved
 
     await makeRepertorioService().removerItem(id, itemId, igrejaId, membroId)
     return new NextResponse(null, { status: 204 })

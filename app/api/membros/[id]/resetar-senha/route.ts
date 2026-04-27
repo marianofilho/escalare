@@ -1,11 +1,12 @@
 // src/app/api/membros/[id]/resetar-senha/route.ts
 import { NextResponse } from "next/server"
-import { getServerSession } from "@/lib/supabase-server"
+import { createSupabaseServerClient, getServerSession } from "@/lib/supabase-server"
 import { supabaseAdmin } from "@/lib/supabase-admin"
 import { Resend } from "resend"
 import { makeMembroService } from "@/lib/factories"
 import { IgrejaRepository } from "@/repositories/igreja.repository"
 import { handleApiError } from "@/lib/api-error-handler"
+import { resolveSession } from "@/lib/resolve-session"
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 
@@ -95,11 +96,14 @@ export async function POST(_req: Request, { params }: RouteParams): Promise<Next
   try {
     const { id: membroIdAlvo } = await params
 
-    const user = await getServerSession()
-    if (!user) return NextResponse.json({ error: "Nao autorizado" }, { status: 401 })
+    const supabase = await createSupabaseServerClient()
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session) return NextResponse.json({ error: "Nao autorizado" }, { status: 401 })
 
-    const igrejaId = user.user_metadata?.igrejaId as string
-    const membroId = user.user_metadata?.membroId as string
+    const resolved = await resolveSession(session)
+    if (!resolved) return NextResponse.json({ error: "Membro não encontrado" }, { status: 403 })
+    
+    const { igrejaId, membroId } = resolved
 
     // Verifica que e admin
     const membroAtual = await makeMembroService().buscarPorId(membroId, igrejaId)
