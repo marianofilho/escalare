@@ -23,9 +23,14 @@ export function useMembros(opcoes: UseMembrosOptions = {}) {
       if (opcoes.perfil) params.set("perfil", opcoes.perfil)
 
       const res = await fetch(`/api/membros?${params.toString()}`)
-      if (!res.ok) throw new Error("Erro ao carregar membros")
-      const data: MembroResponseDto[] = await res.json()
+      if (!res.ok){
+        throw new Error("Erro ao carregar membros")
+      } 
+
+      const json = await res.json()
+      const data: MembroResponseDto[] = Array.isArray(json) ? json : (json.data ?? [])
       setMembros(data)
+
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro desconhecido")
     } finally {

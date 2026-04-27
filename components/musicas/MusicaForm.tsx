@@ -65,7 +65,12 @@ export default function MusicaForm({ musica }: MusicaFormProps) {
     setLoadingCantores(true)
     try {
       const res = await fetch("/api/membros?perfil=CANTOR&status=ATIVO")
-      if (res.ok) setCantoresDisponiveis(await res.json())
+      if (res.ok){
+        const json = await res.json()
+        const lista = Array.isArray(json) ? json : (json.data ?? [])
+        setCantoresDisponiveis(lista)      
+      } 
+        
     } finally {
       setLoadingCantores(false)
     }
